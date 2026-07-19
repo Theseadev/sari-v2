@@ -143,10 +143,12 @@ export async function dashboard(c: Context) {
 					<div class="card-header">
 						<h2>Aktivitas Terkini</h2>
 					</div>
+					<div style="overflow-x:auto">
 					<table class="table">
 						<thead><tr><th>User</th><th>Aksi</th><th>Keterangan</th><th>Waktu</th></tr></thead>
 						<tbody>${logRows}</tbody>
 					</table>
+					</div>
 				</div>
 
 				<!-- Recent Books -->
@@ -155,10 +157,12 @@ export async function dashboard(c: Context) {
 						<h2>Buku Terbaru</h2>
 						<a href="/buku" class="btn-sm">Lihat Semua →</a>
 					</div>
+					<div style="overflow-x:auto">
 					<table class="table">
 						<thead><tr><th style="width:44px"></th><th>Judul</th><th>Akses</th><th>Ditambahkan</th></tr></thead>
 						<tbody>${recentRows}</tbody>
 					</table>
+					</div>
 				</div>
 			</div>
 
