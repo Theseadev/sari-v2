@@ -1,6 +1,6 @@
 # SARI v2 — Sistem Akses Referensi Informasi v2
 
-> **Digital Library & Book Catalog System for UIN Antasari Banjarmasin**
+> **Digital Library & Book Catalog System for Universitas Sari Mulia Banjarmasin**
 
 ![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
@@ -12,7 +12,7 @@
 
 ## Overview
 
-**SARI v2** (Sistem Akses Referensi Informasi versi 2) is a modern digital library system built for **UIN Antasari Banjarmasin**. It provides a public book catalog, secure PDF reader with access control, and a full-featured admin panel for managing books, users, faculties, and study programs.
+**SARI v2** (Sistem Akses Referensi Informasi versi 2) is a modern digital library system built for **Universitas Sari Mulia Banjarmasin**. It provides a public book catalog, secure PDF reader with access control, and a full-featured admin panel for managing books, users, faculties, and study programs.
 
 Built with **Hono** (fast, lightweight web framework) + **TypeScript** + **MySQL**, running on **Node.js** via `@hono/node-server`.
 
@@ -261,9 +261,9 @@ Full schema: `database/schema.sql`
 
 ## License
 
-MIT © [UIN Antasari Banjarmasin](https://www.uin-antasari.ac.id)
+MIT © [Universitas Sari Mulia Banjarmasin](https://www.unisma.ac.id)
 
 ---
 
-> **Maintained by** the UIN Antasari Digital Library Team.  
+> **Maintained by** the Universitas Sari Mulia Digital Library Team.  
 > Issues & PRs welcome — please follow the existing code style (TypeScript strict, Hono patterns, raw SQL).
