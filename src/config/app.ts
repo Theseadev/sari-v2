@@ -2,17 +2,36 @@
 
 // .env loading: optional, uncomment jika pakai dotenv
 
+const DEFAULT_JWT_SECRET = "sari-v2-dev-secret-change-in-production";
+const jwtSecret = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+
+const isProd = process.env.NODE_ENV === "production";
+
+if (!process.env.JWT_SECRET && !isProd) {
+	console.warn(
+		"⚠️  JWT_SECRET not set — using dev default. Set JWT_SECRET in production!",
+	);
+}
+if (!process.env.JWT_SECRET && isProd) {
+	throw new Error("FATAL: JWT_SECRET must be set in production");
+}
+
+// Ponytail: enforce non-default secret in prod
+if (jwtSecret === DEFAULT_JWT_SECRET && isProd) {
+	throw new Error(
+		"FATAL: JWT_SECRET cannot be the default value in production",
+	);
+}
+
 export const APP = {
 	NAME: "SARI - Perpustakaan Digital Universitas Sari Mulia",
-	DEBUG: process.env.NODE_ENV !== "production",
+	DEBUG: !isProd,
 	PORT: Number(process.env.PORT) || 3000,
-	BASE_PATH: process.cwd() + "/",
-	STORAGE_PATH: process.cwd() + "/storage/",
-	PDF_PATH: process.cwd() + "/storage/pdfs/",
-	COVER_PATH: process.cwd() + "/public/uploads/covers/",
-	/** Rahasia untuk JWT — ganti di production! */
-	JWT_SECRET:
-		process.env.JWT_SECRET || "sari-v2-dev-secret-change-in-production",
+	BASE_PATH: `${process.cwd()}/`,
+	STORAGE_PATH: `${process.cwd()}/storage/`,
+	PDF_PATH: `${process.cwd()}/storage/pdfs/`,
+	COVER_PATH: `${process.cwd()}/public/uploads/covers/`,
+	JWT_SECRET: jwtSecret,
 	JWT_EXPIRES_IN: "24h",
 };
 

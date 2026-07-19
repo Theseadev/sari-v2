@@ -6,7 +6,7 @@ import { query, queryOne } from "../config/database";
 import type { Book, Faculty, Program } from "../types";
 import { esc } from "../helpers";
 import { layout, errorPage } from "../views/html";
-import { getUser } from "./auth";
+import { getUser, getFlash } from "../helpers";
 
 export async function catalog(c: Context) {
 	const user = getUser(c);
@@ -14,7 +14,8 @@ export async function catalog(c: Context) {
 	const facultyId = Number(c.req.query("faculty")) || 0;
 	const programId = Number(c.req.query("program")) || 0;
 	const isPrivileged =
-		user && ["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName);
+		user &&
+		["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName);
 	const flash = getFlash(c);
 
 	let where = "b.status = 'active'";
@@ -77,9 +78,12 @@ export async function catalog(c: Context) {
 				b.access_type === "internal"
 					? '<span class="access-badge internal">INTERNAL</span>'
 					: '<span class="access-badge public">PUBLIC</span>';
-			const viewsBadge = '<span class="views-badge"><span class="view-icon">👁</span>' + b.views + '</span>';
+			const viewsBadge =
+				'<span class="views-badge"><span class="view-icon">👁</span>' +
+				b.views +
+				"</span>";
 			const prodi = b.program_name
-				? '<span>' + esc(b.program_name) + '</span>'
+				? "<span>" + esc(b.program_name) + "</span>"
 				: "";
 			bookCards += `
         <div class="book-card">
@@ -113,7 +117,12 @@ export async function catalog(c: Context) {
 		progItems += `<li data-val="${p.id}" class="${p.id === programId ? "selected" : ""}">${esc(p.name)}</li>`;
 	}
 
-	function dropdown(name: string, label: string, selected: number, items: string): string {
+	function dropdown(
+		name: string,
+		label: string,
+		selected: number,
+		items: string,
+	): string {
 		const selectedLabel = selected === 0 ? label : "";
 		return `<div class="dd-wrap" data-name="${name}">
       <input type="hidden" name="${name}" value="${selected}">
@@ -179,7 +188,10 @@ export async function detail(c: Context) {
 
 	if (
 		book.access_type === "internal" &&
-		(!user || !["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName))
+		(!user ||
+			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
+				user.roleName,
+			))
 	) {
 		return c.html(
 			errorPage(
@@ -253,7 +265,10 @@ export async function reader(c: Context) {
 
 	if (
 		book.access_type === "internal" &&
-		(!user || !["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName))
+		(!user ||
+			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
+				user.roleName,
+			))
 	) {
 		return c.html(
 			errorPage(
@@ -361,15 +376,4 @@ pdfjsLib.getDocument(URL).promise.then(p=>{PDF=p;TOTAL=Math.min(p.numPages,100);
 </script>
 </body>
 </html>`);
-}
-
-// ── Helpers ──
-function getFlash(c: Context): { type: string; message: string } | null {
-	const raw = getCookie(c, "flash");
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return null;
-	}
 }

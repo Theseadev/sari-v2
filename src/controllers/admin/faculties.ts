@@ -3,7 +3,7 @@
 import type { Context } from "hono";
 import { query, queryOne } from "../../config/database";
 import { facList, facForm } from "../../views/admin/faculties";
-import { getUser } from "../auth";
+import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 

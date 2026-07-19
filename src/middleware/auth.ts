@@ -1,24 +1,9 @@
 // src/middleware/auth.ts - Middleware RBAC
 
 import type { Context, MiddlewareHandler } from "hono";
-import { getCookie } from "hono/cookie";
-import jwt from "jsonwebtoken";
 import { APP } from "../config/app";
 import type { JwtPayload, RoleName } from "../types";
-import { esc } from "../helpers";
-
-/**
- * Ambil user dari JWT cookie.
- */
-export function getUser(c: Context): JwtPayload | null {
-	const token = getCookie(c, "token");
-	if (!token) return null;
-	try {
-		return jwt.verify(token, APP.JWT_SECRET) as JwtPayload;
-	} catch {
-		return null;
-	}
-}
+import { getUser, esc } from "../helpers";
 
 /**
  * Middleware: redirect ke /login jika belum auth.
@@ -63,7 +48,9 @@ export function requireBookAccess(accessType: string): MiddlewareHandler {
 		const user = getUser(c);
 		if (
 			!user ||
-			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName)
+			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
+				user.roleName,
+			)
 		) {
 			return page403(c, "Buku ini hanya untuk akses internal kampus.");
 		}
@@ -88,4 +75,4 @@ function page403(c: Context, msg: string): Response {
 	);
 }
 
-export { esc } from "../helpers";
+export { esc, getUser } from "../helpers";

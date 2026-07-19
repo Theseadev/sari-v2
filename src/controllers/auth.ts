@@ -4,22 +4,41 @@ import type { Context } from "hono";
 import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 import { APP } from "../config/app";
 import { queryOne } from "../config/database";
 import type { JwtPayload } from "../types";
 import { layout } from "../views/html";
+import { getUser, hasRole, getFlash, setFlashRedirect } from "../helpers";
 
-/** Ambil user dari cookie JWT */
-export function getUser(c: Context): JwtPayload | null {
-	const token = getCookie(c, "token");
-	if (!token) return null;
-	try {
-		return jwt.verify(token, APP.JWT_SECRET) as JwtPayload;
-	} catch {
-		return null;
+// ---- Rate limiting (in-memory, ponytail: simple & works for single-instance) ----
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+	const now = Date.now();
+	const record = loginAttempts.get(ip);
+	if (!record || now > record.resetAt) {
+		loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 }); // 1 min window
+		return { allowed: true };
 	}
+	if (record.count >= 5) {
+		return {
+			allowed: false,
+			retryAfter: Math.ceil((record.resetAt - now) / 1000),
+		};
+	}
+	record.count++;
+	return { allowed: true };
 }
 
+// ---- Zod validation ----
+const LoginSchema = z.object({
+	email: z.string().email("Format email tidak valid").max(255),
+	password: z.string().min(1, "Password wajib diisi").max(100),
+	redirect: z.string().url().optional(),
+});
+
+// ---- Controllers ----
 export async function loginForm(c: Context) {
 	const user = getUser(c);
 	if (user) return c.redirect("/");
@@ -35,7 +54,7 @@ export async function loginForm(c: Context) {
       <div class="form-group">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" class="form-control" required autocomplete="email"
-               placeholder="email@uin-antasari.ac.id">
+               placeholder="email@unisma.ac.id">
       </div>
       <div class="form-group">
         <label for="password">Password</label>
@@ -54,14 +73,27 @@ export async function loginForm(c: Context) {
 }
 
 export async function login(c: Context) {
-	const body = await c.req.parseBody();
-	const email = String(body.email || "");
-	const password = String(body.password || "");
-	const redirectTo = String(body.redirect || c.req.header("referer") || "/buku");
-
-	if (!email || !password) {
-		return setFlashRedirect(c, redirectTo, "Email dan password wajib diisi.", "danger");
+	const ip =
+		c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+	const rl = checkRateLimit(ip);
+	if (!rl.allowed) {
+		return setFlashRedirect(
+			c,
+			"/login",
+			`Terlalu banyak percobaan. Coba lagi dalam ${rl.retryAfter} detik.`,
+			"danger",
+		);
 	}
+
+	const body = await c.req.parseBody();
+	const parsed = LoginSchema.safeParse(body);
+	if (!parsed.success) {
+		const msg = parsed.error.issues.map((err) => err.message).join(", ");
+		return setFlashRedirect(c, "/login", msg, "danger");
+	}
+
+	const { email, password } = parsed.data;
+	const redirectTo = parsed.data.redirect || c.req.header("referer") || "/buku";
 
 	const user = await queryOne<any>(
 		`SELECT u.*, r.name AS role_name
@@ -71,8 +103,16 @@ export async function login(c: Context) {
 	);
 
 	if (!user || !(await bcrypt.compare(password, user.password))) {
-		return setFlashRedirect(c, redirectTo, "Email atau password salah.", "danger");
+		return setFlashRedirect(
+			c,
+			redirectTo,
+			"Email atau password salah.",
+			"danger",
+		);
 	}
+
+	// Reset rate limit on successful login
+	loginAttempts.delete(ip);
 
 	const payload: JwtPayload = {
 		userId: user.id,
@@ -97,28 +137,5 @@ export async function logout(c: Context) {
 	return c.redirect("/login");
 }
 
-// -- Helpers --
-
-function getFlash(c: Context): { type: string; message: string } | null {
-	const raw = getCookie(c, "flash");
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return null;
-	}
-}
-
-function setFlashRedirect(
-	c: Context,
-	url: string,
-	msg: string,
-	type: string,
-): Response {
-	setCookie(c, "flash", JSON.stringify({ type, message: msg }), {
-		httpOnly: true,
-		path: "/",
-		maxAge: 5,
-	});
-	return c.redirect(url);
-}
+// Re-export for other modules
+export { getUser, hasRole };

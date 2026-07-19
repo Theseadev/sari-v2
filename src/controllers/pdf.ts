@@ -6,7 +6,7 @@ import { stat } from "fs/promises";
 import { queryOne } from "../config/database";
 import { APP } from "../config/app";
 import type { Book } from "../types";
-import { getUser } from "./auth";
+import { getUser } from "../helpers";
 import { errorPage } from "../views/html";
 
 export async function servePdf(c: Context) {
@@ -29,7 +29,9 @@ export async function servePdf(c: Context) {
 	if (book.access_type === "internal") {
 		if (
 			!user ||
-			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName)
+			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
+				user.roleName,
+			)
 		) {
 			return c.html(
 				errorPage(

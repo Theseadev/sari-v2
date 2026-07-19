@@ -1,16 +1,16 @@
 // src/controllers/logs.ts - Log aktivitas (Super Admin only)
 
 import type { Context } from "hono";
-import { getCookie } from "hono/cookie";
 import { query } from "../config/database";
 import type { ActivityLog } from "../types";
 import { esc } from "../helpers";
 import { adminLayout } from "../views/admin/helpers";
-import { getUser } from "./auth";
+import { getUser, getFlash } from "../helpers";
 
 export async function logs(c: Context) {
-	const user = getUser(c)!;
-	const flash = getFlash(c);
+	const user = getUser(c);
+	if (!user) return c.redirect("/login");
+	const _flash = getFlash(c);
 
 	const rows = await query<ActivityLog[]>(
 		`SELECT al.*, u.name AS user_name
@@ -45,15 +45,12 @@ export async function logs(c: Context) {
     </div>
   </div>`;
 
-	return c.html(adminLayout("Log Aktivitas", body, { name: user.name, roleName: user.roleName }, "logs"));
-}
-
-function getFlash(c: Context): any {
-	const raw = getCookie(c, "flash");
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return null;
-	}
+	return c.html(
+		adminLayout(
+			"Log Aktivitas",
+			body,
+			{ name: user.name, roleName: user.roleName },
+			"logs",
+		),
+	);
 }

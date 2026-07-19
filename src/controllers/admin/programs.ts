@@ -3,7 +3,7 @@
 import type { Context } from "hono";
 import { query, queryOne } from "../../config/database";
 import { progList, progForm } from "../../views/admin/programs";
-import { getUser } from "../auth";
+import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 

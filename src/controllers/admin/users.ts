@@ -4,7 +4,7 @@ import type { Context } from "hono";
 import bcrypt from "bcryptjs";
 import { query, queryOne } from "../../config/database";
 import { userList, userForm } from "../../views/admin/users";
-import { getUser } from "../auth";
+import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 

@@ -6,7 +6,7 @@ import { query } from "../config/database";
 import type { Stats, ActivityLog, Book } from "../types";
 import { esc } from "../helpers";
 import { adminLayout } from "../views/admin/helpers";
-import { getUser } from "./auth";
+import { getUser, getFlash } from "../helpers";
 
 export async function dashboard(c: Context) {
 	const user = getUser(c);
@@ -193,12 +193,3 @@ function timeAgo(dateStr: string): string {
 	return dateStr.slice(0, 10);
 }
 
-function getFlash(c: Context): any {
-	const raw = getCookie(c, "flash");
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return null;
-	}
-}

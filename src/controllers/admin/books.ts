@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { query, queryOne } from "../../config/database";
 import { APP } from "../../config/app";
 import { bookList, bookForm } from "../../views/admin/books";
-import { getUser } from "../auth";
+import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 
