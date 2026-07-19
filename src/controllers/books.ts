@@ -440,24 +440,22 @@ export async function detailPage(c: Context) {
 	      <a href="/buku">Katalog</a> <span>/</span>
 	      <span>${esc(current.title)}</span>
 	    </nav>
-	    <div class="book-detail-grid">
-	      <div class="book-detail-cover-wrap">${coverHtml}</div>
-	      <div class="book-detail-info">
-	        <h1>${esc(current.title)}</h1>
-	        <p class="author">${esc(current.author)}</p>
-	        <div class="meta-grid">
-	          ${facProdi}
-	          ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
-	          ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
-	          ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
-	          ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
-	          <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
-	          <span><strong>Dilihat</strong><br>${current.views}x</span>
-	        </div>
-	        ${desc}
-	        <div class="modal-actions">
-	          <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
-	        </div>
+	    <div class="book-detail-info" style="text-align:center;max-width:640px;margin:0 auto 32px">
+	      ${coverHtml}
+	      <h1 style="margin-top:20px">${esc(current.title)}</h1>
+	      <p class="author">${esc(current.author)}</p>
+	      <div class="meta-grid" style="justify-content:center">
+	        ${facProdi}
+	        ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
+	        ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
+	        ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
+	        ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
+	        <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
+	        <span><strong>Dilihat</strong><br>${current.views}x</span>
+	      </div>
+	      ${desc}
+	      <div class="modal-actions" style="justify-content:center">
+	        <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
 	      </div>
 	    </div>
 	  </div>
