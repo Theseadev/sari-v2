@@ -106,7 +106,7 @@ export function bookForm(
   <form method="POST" action="${action}" enctype="multipart/form-data">
     ${inputField("Judul", "title", book?.title ?? "", { required: true, placeholder: "Judul buku" })}
     ${inputField("Penulis", "author", book?.author ?? "", { required: true, placeholder: "Nama penulis" })}
-    ${textareaField("Deskripsi", "description", book?.description ?? "", { rows: 3 })}
+    ${textareaField("Sinopsis", "description", book?.description ?? "", { rows: 3 })}
 
     ${selectField("Program Studi", "program_id", progOpts, book?.program_id ?? "")}
 

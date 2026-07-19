@@ -14,6 +14,7 @@ import * as booksCrud from "./controllers/admin/books";
 import * as usersCrud from "./controllers/admin/users";
 import * as facsCrud from "./controllers/admin/faculties";
 import * as progsCrud from "./controllers/admin/programs";
+import { csrfProtection } from "./middleware/csrf";
 
 const app = new Hono();
 
@@ -21,15 +22,24 @@ const app = new Hono();
 app.use("/assets/*", serveStatic({ root: "public" }));
 app.use("/uploads/*", serveStatic({ root: "public" }));
 
+// CSRF protection for mutating requests
+app.use("*", csrfProtection);
+
 // AUTH
 app.get("/login", (c) => auth.loginForm(c));
 app.post("/login", (c) => auth.login(c));
+app.get("/register", (c) => auth.registerForm(c));
+app.post("/register", (c) => auth.register(c));
 app.get("/logout", (c) => auth.logout(c));
+
+// Sitemap
+app.get("/sitemap.xml", (c) => auth.sitemap(c));
 
 // PUBLIC: Catalog & Detail
 app.get("/", (c) => c.redirect("/buku"));
 app.get("/buku", (c) => books.catalog(c));
 app.get("/buku/:slug", (c) => books.detail(c));
+app.get("/buku/:slug/full", (c) => books.detailPage(c));
 
 // PDF Reader & Proxy
 app.get("/baca/:slug", (c) => books.reader(c));
@@ -54,7 +64,6 @@ app.post("/admin/users/create", (c) => usersCrud.store(c));
 app.get("/admin/users/:id/edit", (c) => usersCrud.editForm(c));
 app.post("/admin/users/:id/update", (c) => usersCrud.update(c));
 app.post("/admin/users/:id/delete", (c) => usersCrud.remove(c));
-
 
 // Faculties CRUD
 app.get("/admin/faculties", (c) => facsCrud.list(c));
@@ -86,5 +95,5 @@ app.notFound((c) =>
 
 // Start
 if (APP.DEBUG)
-	console.log(`🚀 ${APP.NAME} running at http://localhost:${APP.PORT}`);
+	console.log(`<${APP.NAME}> running at http://localhost:${APP.PORT}`);
 serve({ fetch: app.fetch, port: APP.PORT });

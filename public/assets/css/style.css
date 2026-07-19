@@ -800,6 +800,11 @@ img {
 .form-group {
 	margin-bottom: 16px;
 }
+.form-row-2 {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
 .form-group label {
 	display: block;
 	font-size: 0.8rem;
@@ -950,6 +955,174 @@ img {
 }
 .modal-close:hover {
 	color: var(--text);
+}
+
+/* Auth Modal Tabs */
+#authModal .modal-close {
+	color: rgba(255, 255, 255, 0.8);
+	z-index: 10;
+}
+#authModal .modal-close:hover {
+	color: #fff;
+	background: rgba(255, 255, 255, 0.15);
+	border-radius: 50%;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.auth-tabs {
+	display: flex;
+	gap: 0;
+	padding: 0;
+	border-bottom: none;
+	position: relative;
+	background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+	border-radius: 16px 16px 0 0;
+}
+.auth-tab {
+	flex: 1;
+	padding: 18px 0;
+	background: none;
+	border: none;
+	font-weight: 700;
+	font-family: var(--font-body);
+	color: rgba(255, 255, 255, 0.6);
+	cursor: pointer;
+	transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	font-size: 0.78rem;
+}
+.auth-tab::after {
+	content: "";
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	width: 0;
+	height: 3px;
+	background: #fff;
+	border-radius: 3px 3px 0 0;
+	transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+	transform: translateX(-50%);
+}
+.auth-tab:hover {
+	color: rgba(255, 255, 255, 0.9);
+	background: rgba(255, 255, 255, 0.08);
+}
+.auth-tab.active {
+	color: #fff;
+}
+.auth-tab.active::after {
+	width: 60%;
+}
+.auth-panels {
+	position: relative;
+	min-height: 200px;
+}
+.auth-panel {
+	display: none;
+	animation: panelFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.auth-panel.active {
+	display: block;
+}
+@keyframes panelFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Auth modal card override */
+#authModal .modal-card {
+	padding: 0;
+	overflow: hidden;
+}
+#authModal .auth-panel {
+	padding: 28px 32px 32px;
+}
+
+/* Auth form inputs */
+#authModal .form-control {
+	border: 1.5px solid var(--border);
+	border-radius: 10px;
+	padding: 13px 16px;
+	background: #f8fafc;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#authModal .form-control:focus {
+	border-color: var(--primary);
+	background: #fff;
+	box-shadow: 0 0 0 4px rgba(140, 192, 235, 0.15);
+	transform: translateY(-1px);
+}
+#authModal .form-group label {
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	margin-bottom: 6px;
+}
+
+/* Auth submit button */
+#authModal .btn-primary {
+	border-radius: 10px;
+	padding: 13px 24px;
+	font-size: 0.9rem;
+	font-weight: 700;
+	letter-spacing: 0.3px;
+	background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+	border: none;
+	color: #fff;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#authModal .btn-primary::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+	transition: left 0.5s;
+}
+#authModal .btn-primary:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 25px rgba(140, 192, 235, 0.35);
+}
+#authModal .btn-primary:hover::before {
+	left: 100%;
+}
+#authModal .btn-primary:active {
+	transform: translateY(0);
+	box-shadow: 0 4px 12px rgba(140, 192, 235, 0.25);
+}
+
+/* Auth modal heading */
+#authModal .auth-panel h2 {
+	font-size: 1.15rem;
+	text-align: left;
+	margin-bottom: 20px;
+	color: var(--text-heading);
+}
+
+/* Auth footer links */
+#authModal .text-muted a {
+	font-size: 0.82rem;
+	font-weight: 600;
+	transition: color 0.2s;
+}
+#authModal .text-muted a:hover {
+	color: var(--primary);
 }
 
 /* ===== UTILITIES ===== */
@@ -1549,101 +1722,284 @@ a.qa-card:hover {
 
 /* ===== BOOK MODAL ===== */
 .modal-overlay#bookModal {
-    z-index: 300;
+	z-index: 300;
 }
 .modal-card.modal-lg {
-    max-width: 900px;
-    width: 95%;
-    max-height: 90vh;
-    overflow-y: auto;
+	max-width: 900px;
+	width: 95%;
+	max-height: 90vh;
+	overflow-y: auto;
+}
+
+.modal-card.modal-sm {
+	max-width: 520px;
+	padding: 28px 24px;
 }
 .book-modal-grid {
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 24px;
+	display: grid;
+	grid-template-columns: 260px 1fr;
+	gap: 24px;
 }
 .book-modal-cover {
-    position: sticky;
-    top: 20px;
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-light);
-    background: var(--bg-warm);
-    aspect-ratio: 3 / 4;
+	position: sticky;
+	top: 20px;
+	border-radius: var(--radius);
+	overflow: hidden;
+	box-shadow: var(--shadow-lg);
+	border: 1px solid var(--border-light);
+	background: var(--bg-warm);
+	aspect-ratio: 3 / 4;
 }
 .book-modal-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
 }
 .book-modal-info h2 {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 500;
-    margin-bottom: 4px;
-    color: var(--text-heading);
+	font-family: var(--font-heading);
+	font-size: 1.4rem;
+	font-weight: 500;
+	margin-bottom: 4px;
+	color: var(--text-heading);
 }
 .book-modal-info .author {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-    font-style: italic;
+	font-size: 0.95rem;
+	color: var(--text-muted);
+	margin-bottom: 16px;
+	font-style: italic;
 }
 .book-modal-info .meta-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    background: var(--bg-warm);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    font-size: 0.85rem;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	background: var(--bg-warm);
+	border-radius: var(--radius);
+	padding: 16px 20px;
+	margin-bottom: 20px;
+	font-size: 0.85rem;
 }
 .book-modal-info .meta-grid span {
-    color: var(--text-muted);
+	color: var(--text-muted);
 }
 .book-modal-info .meta-grid strong {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 0.75rem;
+	color: var(--text);
+	font-weight: 600;
+	font-size: 0.75rem;
 }
 .book-modal-info .description {
-    margin-bottom: 24px;
+	margin-bottom: 24px;
 }
 .book-modal-info .description h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
+	margin-bottom: 8px;
+	font-size: 1rem;
 }
 .book-modal-info .description p {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.8;
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	line-height: 1.8;
 }
 .modal-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .book-modal-grid {
-        grid-template-columns: 1fr;
-    }
-    .book-modal-cover {
-        max-width: 280px;
-        margin: 0 auto;
-        position: static;
-    }
-    .book-modal-info .meta-grid {
-        grid-template-columns: 1fr;
-    }
-    .modal-actions {
-        flex-direction: column;
-    }
-    .modal-actions .btn {
-        width: 100%;
-        justify-content: center;
-    }
+	.book-modal-grid {
+		grid-template-columns: 1fr;
+	}
+	.book-modal-cover {
+		max-width: 280px;
+		margin: 0 auto;
+		position: static;
+	}
+	.book-modal-info .meta-grid {
+		grid-template-columns: 1fr;
+	}
+	.modal-actions {
+		flex-direction: column;
+	}
+	.modal-actions .btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* Modal navigation buttons */
+.modal-nav {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+.modal-nav .btn {
+	font-size: 0.75rem;
+	padding: 6px 12px;
+}
+.modal-nav .btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Book modal specific */
+.book-modal-grid {
+	display: grid;
+	grid-template-columns: 260px 1fr;
+	gap: 24px;
+}
+.book-modal-cover {
+	position: sticky;
+	top: 20px;
+	border-radius: var(--radius);
+	overflow: hidden;
+	box-shadow: var(--shadow-lg);
+	border: 1px solid var(--border-light);
+	background: var(--bg-warm);
+	aspect-ratio: 3 / 4;
+}
+.book-modal-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.book-modal-info h2 {
+	font-family: var(--font-heading);
+	font-size: 1.4rem;
+	font-weight: 500;
+	margin-bottom: 4px;
+	color: var(--text-heading);
+}
+.book-modal-info .author {
+	font-size: 0.95rem;
+	color: var(--text-muted);
+	margin-bottom: 16px;
+	font-style: italic;
+}
+.book-modal-info .meta-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	background: var(--bg-warm);
+	border-radius: var(--radius);
+	padding: 16px 20px;
+	margin-bottom: 20px;
+	font-size: 0.85rem;
+}
+.book-modal-info .meta-grid span {
+	color: var(--text-muted);
+}
+.book-modal-info .meta-grid strong {
+	color: var(--text);
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+.book-modal-info .description {
+	margin-bottom: 24px;
+}
+.book-modal-info .description h3 {
+	margin-bottom: 8px;
+	font-size: 1rem;
+}
+.book-modal-info .description p {
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	line-height: 1.8;
+}
+.modal-actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+	.book-modal-grid {
+		grid-template-columns: 1fr;
+	}
+	.book-modal-cover {
+		max-width: 280px;
+		margin: 0 auto;
+		position: static;
+	}
+	.book-modal-info .meta-grid {
+		grid-template-columns: 1fr;
+	}
+	.modal-actions {
+		flex-direction: column;
+	}
+	.modal-actions .btn {
+		width: 100%;
+		justify-content: center;
+	}
+	.modal-nav {
+		justify-content: space-between;
+	}
+	.modal-nav .btn {
+		flex: 1;
+		text-align: center;
+	}
+}
+
+/* Ensure book cards are clickable */
+.book-card {
+	cursor: pointer;
+}
+
+/* ===== SKELETON LOADING ===== */
+.skeleton {
+	background: linear-gradient(
+		90deg,
+		var(--bg-warm) 25%,
+		var(--border-light) 50%,
+		var(--bg-warm) 75%
+	);
+	background-size: 200% 100%;
+	animation: skeleton-loading 1.5s infinite;
+	border-radius: var(--radius-sm);
+}
+@keyframes skeleton-loading {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+.skeleton-card {
+	background: var(--bg-card);
+	border-radius: var(--radius);
+	border: 1px solid var(--border-light);
+	overflow: hidden;
+}
+.skeleton-card .skeleton-cover {
+	aspect-ratio: 3 / 4;
+}
+.skeleton-card .skeleton-body {
+	padding: 16px;
+}
+.skeleton-card .skeleton-title {
+	height: 20px;
+	margin-bottom: 8px;
+	width: 80%;
+}
+.skeleton-card .skeleton-author {
+	height: 16px;
+	width: 60%;
+	margin-bottom: 12px;
+}
+.skeleton-card .skeleton-meta {
+	height: 14px;
+	width: 40%;
+}
+
+/* Page skeleton */
+.page-skeleton {
+	padding: 40px 0;
+}
+.page-skeleton .skeleton-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 24px;
 }

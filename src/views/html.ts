@@ -2,23 +2,31 @@
 
 import { APP, esc } from "../helpers";
 import type { JwtPayload } from "../types";
+import { createHmac } from "node:crypto";
 
 export function layout(
 	title: string,
 	body: string,
 	user: JwtPayload | null,
 	flash?: { type: string; message: string } | null,
+	seo?: { description?: string; ogImage?: string; ogType?: string },
 ): string {
 	const navRight = user
 		? `
     <li><span class="badge ${user.roleName}">${esc(user.name)}</span></li>
     ${["admin", "super_admin", "pustakawan"].includes(user.roleName) ? '<li><a href="/admin">Dashboard</a></li>' : ""}
     <li><a href="/logout">Logout</a></li>`
-		: '<li><a href="#" id="openLogin">Login</a></li>';
+		: `<li><a href="#" id="openAuth">Masuk / Daftar</a></li>`;
 
 	const flashHtml = flash?.message
-		? `<div class="container" style="margin-top:88px;margin-bottom:-24px"><div class="alert alert-${esc(flash.type)}">${esc(flash.message)}</div></div>`
+		? `<meta name="flash-type" content="${esc(flash.type)}"><meta name="flash-msg" content="${esc(flash.message)}">`
 		: "";
+
+	const description =
+		seo?.description ||
+		"Perpustakaan Digital Universitas Sari Mulia Banjarmasin. Akses koleksi buku, skripsi, jurnal, dan referensi ilmiah kapan saja.";
+	const ogImage = seo?.ogImage || "/assets/images/og-default.jpg";
+	const ogType = seo?.ogType || "website";
 
 	return `<!DOCTYPE html>
 <html lang="id">
@@ -26,7 +34,19 @@ export function layout(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:image" content="${esc(ogImage)}">
+<meta property="og:type" content="${esc(ogType)}">
+<meta property="og:site_name" content="${esc(APP.NAME)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(ogImage)}">
 <link rel="stylesheet" href="/assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta name="csrf-token" content="${esc(csrfToken())}">
 </head>
 <body>
 
@@ -49,26 +69,67 @@ ${flashHtml}
 
 <main>${body}</main>
 
-${!user ? `
-<div id="loginModal" class="modal-overlay">
-  <div class="modal-card">
-    <button class="modal-close" id="closeModal">&times;</button>
-    <h2>Login Perpustakaan Digital</h2>
-    <form method="POST" action="/login">
-      <div class="form-group">
-        <label for="modal-email">Email</label>
-        <input type="email" id="modal-email" name="email" class="form-control" required autocomplete="email" placeholder="email@uin-antasari.ac.id">
+${
+	!user
+		? `
+<div id="authModal" class="modal-overlay">
+  <div class="modal-card modal-sm">
+    <button class="modal-close" id="closeAuthModal">&times;</button>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login">Masuk</button>
+      <button type="button" class="auth-tab" data-tab="register">Daftar</button>
+    </div>
+    <div class="auth-panels">
+      <div class="auth-panel active" id="panel-login">
+        <h2>Masuk Perpustakaan Digital</h2>
+        <form method="POST" action="/login">
+          <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
+          <div class="form-group">
+            <label for="modal-email">Email</label>
+            <input type="email" id="modal-email" name="email" class="form-control" required autocomplete="email" placeholder="email@unisma.ac.id">
+          </div>
+          <div class="form-group">
+            <label for="modal-password">Password</label>
+            <input type="password" id="modal-password" name="password" class="form-control" required autocomplete="current-password">
+          </div>
+          <input type="hidden" name="redirect" value="/buku">
+          <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+        </form>
+        <p class="text-center mt-2 text-muted"><a href="/buku">Jelajahi Katalog Publik →</a></p>
       </div>
-      <div class="form-group">
-        <label for="modal-password">Password</label>
-        <input type="password" id="modal-password" name="password" class="form-control" required autocomplete="current-password">
+      <div class="auth-panel" id="panel-register">
+        <h2>Daftar Akun Tamu</h2>
+        <form method="POST" action="/register">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="modal-name">Nama Lengkap</label>
+              <input type="text" id="modal-name" name="name" class="form-control" required autocomplete="name" placeholder="Nama lengkap">
+            </div>
+            <div class="form-group">
+              <label for="modal-email-reg">Email</label>
+              <input type="email" id="modal-email-reg" name="email" class="form-control" required autocomplete="email" placeholder="email@unisma.ac.id">
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="modal-password-reg">Password</label>
+              <input type="password" id="modal-password-reg" name="password" class="form-control" required autocomplete="new-password" minlength="6" placeholder="Minimal 6 karakter">
+            </div>
+            <div class="form-group">
+              <label for="modal-password_confirm">Konfirmasi Password</label>
+              <input type="password" id="modal-password_confirm" name="password_confirm" class="form-control" required autocomplete="new-password" placeholder="Ulangi password">
+            </div>
+          </div>
+          <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
+          <button type="submit" class="btn btn-primary btn-block">Daftar</button>
+        </form>
+        <p class="text-center mt-2 text-muted"><a href="#" data-switch="login">Sudah punya akun? Masuk →</a></p>
       </div>
-      <input type="hidden" name="redirect" value="/buku">
-      <button type="submit" class="btn btn-primary btn-block">Login</button>
-    </form>
-    <p class="text-center mt-2 text-muted"><a href="/buku">Jelajahi Katalog Publik →</a></p>
+    </div>
   </div>
-</div>` : ""}
+</div>`
+		: ""
+}
 
 <footer class="footer">
   <div class="container">
@@ -81,7 +142,6 @@ ${!user ? `
         <div class="footer-col">
           <h4>Navigasi</h4>
           <a href="/buku">Katalog Buku</a>
-          <a href="/login">Login</a>
         </div>
         <div class="footer-col">
           <h4>Universitas</h4>
@@ -99,6 +159,31 @@ ${!user ? `
 <script src="/assets/js/app.js"></script>
 </body>
 </html>`;
+}
+
+function csrfToken(): string {
+	// Ponytail: simple HMAC-based token for CSRF (stateless, no session storage needed)
+	const secret =
+		process.env.CSRF_SECRET || "sari-csrf-dev-change-in-production";
+	const timestamp = Math.floor(Date.now() / 3600000).toString(); // 1-hour windows
+	return createHmac("sha256", secret)
+		.update(timestamp)
+		.digest("hex")
+		.slice(0, 32);
+}
+
+export function verifyCsrfToken(token: string): boolean {
+	const secret =
+		process.env.CSRF_SECRET || "sari-csrf-dev-change-in-production";
+	const now = Math.floor(Date.now() / 3600000);
+	for (let i = 0; i < 2; i++) {
+		const expected = createHmac("sha256", secret)
+			.update((now - i).toString())
+			.digest("hex")
+			.slice(0, 32);
+		if (token === expected) return true;
+	}
+	return false;
 }
 
 export function errorPage(

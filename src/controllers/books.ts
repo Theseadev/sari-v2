@@ -7,11 +7,14 @@ import { esc } from "../helpers";
 import { layout, errorPage } from "../views/html";
 import { getUser, getFlash } from "../helpers";
 
+const perPage = 24;
+
 export async function catalog(c: Context) {
 	const user = getUser(c);
 	const search = c.req.query("q")?.trim() || "";
 	const facultyId = Number(c.req.query("faculty")) || 0;
 	const programId = Number(c.req.query("program")) || 0;
+	const page = Math.max(1, Number(c.req.query("page")) || 1);
 	const isPrivileged =
 		user &&
 		["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName);
@@ -34,6 +37,12 @@ export async function catalog(c: Context) {
 		params.push(facultyId);
 	}
 
+	const total = await queryOne<{ cnt: number }>(
+		`SELECT COUNT(*) AS cnt FROM books b LEFT JOIN programs pr ON pr.id = b.program_id LEFT JOIN faculties f ON f.id = pr.faculty_id WHERE ${where}`,
+		params,
+	);
+	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+
 	const books = await query<Book[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type,
             b.cover_image, b.page_count, b.views,
@@ -42,7 +51,7 @@ export async function catalog(c: Context) {
      FROM books b
      LEFT JOIN programs pr ON pr.id = b.program_id
      LEFT JOIN faculties f ON f.id = pr.faculty_id
-     WHERE ${where} ORDER BY b.created_at DESC LIMIT 24`,
+     WHERE ${where} ORDER BY b.created_at DESC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
 		params,
 	);
 
@@ -128,6 +137,25 @@ export async function catalog(c: Context) {
     </div>`;
 	}
 
+	// Pagination HTML
+	let paginationHtml = "";
+	if (totalPages > 1) {
+		const qs = new URLSearchParams();
+		if (search) qs.set("q", search);
+		if (facultyId) qs.set("faculty", String(facultyId));
+		if (programId) qs.set("program", String(programId));
+		const baseQs = qs.toString();
+		const pageLink = (p: number) =>
+			`/buku${baseQs ? "?" + baseQs + "&" : "?"}page=${p}`;
+
+		paginationHtml = `
+			<nav class="pagination" aria-label="Halaman">
+				${page > 1 ? `<a href="${pageLink(page - 1)}" class="btn btn-sm btn-outline">← Sebelumnya</a>` : ""}
+				<span class="page-info">Halaman ${page} dari ${totalPages}</span>
+				${page < totalPages ? `<a href="${pageLink(page + 1)}" class="btn btn-sm btn-outline">Selanjutnya →</a>` : ""}
+			</nav>`;
+	}
+
 	const body = `
 		<section class="hero">
 			<div class="container">
@@ -151,9 +179,10 @@ export async function catalog(c: Context) {
 			<div class="container">
 				<div class="section-title">
 					<span>${search ? `Hasil untuk "${esc(search)}"` : "Semua Koleksi"}</span>
-					<span class="count">${books.length} buku</span>
+					<span class="count">${books.length} dari ${total?.cnt || 0} buku</span>
 				</div>
 				<div class="book-grid">${bookCards}</div>
+				${paginationHtml}
 			</div>
 		</section>`;
 
@@ -163,21 +192,46 @@ export async function catalog(c: Context) {
 export async function detail(c: Context) {
 	const user = getUser(c);
 	const slug = c.req.param("slug");
-	const flash = getFlash(c);
-	const isModal = c.req.query("modal") === "1";
+	const search = c.req.query("q")?.trim() || "";
+	const facultyId = Number(c.req.query("faculty")) || 0;
+	const programId = Number(c.req.query("program")) || 0;
+	const isPrivileged =
+		user &&
+		["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName);
 
-	const book = await queryOne<Book>(
-		`SELECT b.*, u.name AS uploader_name,
-            pr.name AS program_name, f.name AS faculty_name
-     FROM books b
-     LEFT JOIN programs pr ON pr.id = b.program_id
-     LEFT JOIN faculties f ON f.id = pr.faculty_id
-     JOIN users u ON u.id = b.uploaded_by
-     WHERE b.slug = ? AND b.status = ?`,
-		[slug, "active"],
+	// Build same WHERE as catalog
+	let where = "b.status = 'active'";
+	const params: unknown[] = [];
+	if (!isPrivileged) where += " AND b.access_type = 'public'";
+	if (search) {
+		where +=
+			" AND MATCH (b.title, b.author, b.description) AGAINST (? IN BOOLEAN MODE)";
+		params.push(search.replace(/[\-+*~"()<>]/g, " ").trim() + "*");
+	}
+	if (programId > 0) {
+		where += " AND b.program_id = ?";
+		params.push(programId);
+	} else if (facultyId > 0) {
+		where += " AND pr.faculty_id = ?";
+		params.push(facultyId);
+	}
+
+	// Get current book + prev/next slugs in same filtered order
+	const current = await queryOne<Book>(
+		`SELECT b.id, b.slug, b.title, b.author, b.access_type,
+	            b.cover_image, b.page_count, b.views,
+	            b.publisher, b.publication_year, b.isbn, b.description,
+	            b.created_at,
+	            pr.name AS program_name, f.name AS faculty_name
+	     FROM books b
+	     LEFT JOIN programs pr ON pr.id = b.program_id
+	     LEFT JOIN faculties f ON f.id = pr.faculty_id
+	     WHERE ${where} AND b.slug = ?
+	     ORDER BY b.created_at DESC LIMIT 1`,
+		[...params, slug],
 	);
 
-	if (!book) {
+	if (!current) {
 		return c.html(
 			errorPage(404, "Tidak Ditemukan", "Buku tidak ditemukan.", user),
 			404,
@@ -185,7 +239,7 @@ export async function detail(c: Context) {
 	}
 
 	if (
-		book.access_type === "internal" &&
+		current.access_type === "internal" &&
 		(!user ||
 			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
 				user.roleName,
@@ -202,43 +256,79 @@ export async function detail(c: Context) {
 		);
 	}
 
-	await query("UPDATE books SET views = views + 1 WHERE id = ?", [book.id]);
+	// Prev/next slugs - use simpler WHERE without joins
+	const whereSimple =
+		"status = 'active'" +
+		(isPrivileged ? "" : " AND access_type = 'public'") +
+		(search
+			? " AND MATCH (title, author, description) AGAINST (? IN BOOLEAN MODE)"
+			: "") +
+		(programId > 0
+			? " AND program_id = ?"
+			: facultyId > 0
+				? " AND program_id IN (SELECT id FROM programs WHERE faculty_id = ?)"
+				: "");
 
-	const coverHtml = book.cover_image
-		? `<img src="/uploads/covers/${esc(book.cover_image)}" alt="${esc(book.title)}">`
+	const simpleParams: unknown[] = [];
+	if (!isPrivileged) {
+	}
+	if (search)
+		simpleParams.push(search.replace(/[\-+*~"()<>]/g, " ").trim() + "*");
+	if (programId > 0) simpleParams.push(programId);
+	else if (facultyId > 0) simpleParams.push(facultyId);
+
+	const prev = await queryOne<{ slug: string }>(
+		`SELECT slug FROM books WHERE ${whereSimple} AND created_at > ? ORDER BY created_at ASC LIMIT 1`,
+		[...simpleParams, current.created_at],
+	);
+	const next = await queryOne<{ slug: string }>(
+		`SELECT slug FROM books WHERE ${whereSimple} AND created_at < ? ORDER BY created_at DESC LIMIT 1`,
+		[...simpleParams, current.created_at],
+	);
+
+	await query("UPDATE books SET views = views + 1 WHERE id = ?", [current.id]);
+
+	const coverHtml = current.cover_image
+		? `<img src="/uploads/covers/${esc(current.cover_image)}" alt="${esc(current.title)}">`
 		: '<div style="aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;font-size:4rem;background:var(--gray-100);color:var(--gray-300)">—</div>';
 
-	const desc = book.description
-		? `<div class="description"><h3>Deskripsi</h3><p>${esc(book.description).replace(/\n/g, "<br>")}</p></div>`
+	const desc = current.description
+		? `<div class="description"><h3>Sinopsis</h3><p>${esc(current.description).replace(/\n/g, "<br>")}</p></div>`
 		: "";
 
-	const facProdi = book.faculty_name
-		? `<span><strong>Fakultas/Prodi</strong><br>${esc(book.faculty_name)}${book.program_name ? " — " + esc(book.program_name) : ""}</span>`
+	const facProdi = current.faculty_name
+		? `<span><strong>Fakultas/Prodi</strong><br>${esc(current.faculty_name)}${current.program_name ? " — " + esc(current.program_name) : ""}</span>`
 		: "";
 
+	// Modal-only response
 	const modalBody = `
-    <div class="modal-overlay show" id="bookModal" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
+    <div class="modal-overlay show" id="bookModal" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle"
+         data-prev="${prev?.slug || ""}" data-next="${next?.slug || ""}"
+         data-q="${esc(search)}" data-faculty="${facultyId}" data-program="${programId}">
       <div class="modal-card modal-lg">
         <button class="modal-close" id="closeBookModal" aria-label="Tutup">&times;</button>
         <div class="modal-body">
           <div class="book-modal-grid">
             <div class="book-modal-cover">${coverHtml}</div>
             <div class="book-modal-info">
-              <h2 id="bookModalTitle">${esc(book.title)}</h2>
-              <p class="author">${esc(book.author)}</p>
+              <div class="modal-nav">
+                ${prev ? `<button class="btn btn-sm btn-outline" data-nav="prev" data-slug="${prev.slug}">← Sebelumnya</button>` : ""}
+                ${next ? `<button class="btn btn-sm btn-outline" data-nav="next" data-slug="${next.slug}">Selanjutnya →</button>` : ""}
+              </div>
+              <h2 id="bookModalTitle">${esc(current.title)}</h2>
+              <p class="author">${esc(current.author)}</p>
               <div class="meta-grid">
                 ${facProdi}
-                ${book.publisher ? `<span><strong>Penerbit</strong><br>${esc(book.publisher)}</span>` : ""}
-                ${book.publication_year ? `<span><strong>Tahun</strong><br>${book.publication_year}</span>` : ""}
-                ${book.isbn ? `<span><strong>ISBN</strong><br>${esc(book.isbn)}</span>` : ""}
-                ${book.page_count ? `<span><strong>Halaman</strong><br>${book.page_count}</span>` : ""}
-                <span><strong>Akses</strong><br>${book.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
-                <span><strong>Dilihat</strong><br>${book.views}x</span>
+                ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
+                ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
+                ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
+                ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
+                <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
+                <span><strong>Dilihat</strong><br>${current.views}x</span>
               </div>
               ${desc}
               <div class="modal-actions">
-                <a href="/baca/${esc(book.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
-                <a href="/buku/${esc(book.slug)}" class="btn btn-outline btn-lg">Lihat Halaman Lengkap</a>
+                <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
               </div>
             </div>
           </div>
@@ -246,36 +336,117 @@ export async function detail(c: Context) {
       </div>
     </div>`;
 
-	if (isModal) {
-		return c.html(modalBody);
+	return c.html(modalBody);
+}
+
+// Full page detail view (for SEO / direct access)
+export async function detailPage(c: Context) {
+	const user = getUser(c);
+	const slug = c.req.param("slug");
+	const isPrivileged =
+		user &&
+		["mahasiswa", "admin", "super_admin", "pustakawan"].includes(user.roleName);
+
+	let where = "b.status = 'active'";
+	const params: unknown[] = [];
+	if (!isPrivileged) where += " AND b.access_type = 'public'";
+
+	const current = await queryOne<Book>(
+		`SELECT b.id, b.slug, b.title, b.author, b.access_type,
+	           b.cover_image, b.page_count, b.views,
+	           b.publisher, b.publication_year, b.isbn, b.description,
+	           pr.name AS program_name, f.name AS faculty_name
+	    FROM books b
+	    LEFT JOIN programs pr ON pr.id = b.program_id
+	    LEFT JOIN faculties f ON f.id = pr.faculty_id
+	    WHERE ${where} AND b.slug = ?
+	    ORDER BY b.created_at DESC LIMIT 1`,
+		[...params, slug],
+	);
+
+	if (!current) {
+		return c.html(
+			errorPage(404, "Tidak Ditemukan", "Buku tidak ditemukan.", user),
+			404,
+		);
 	}
 
-	const body = `
-    <div class="detail-section">
-      <div class="container">
-        <div class="breadcrumb"><a href="/buku">Katalog</a> <span>/</span> <span>${esc(book.title)}</span></div>
-        <div class="book-detail">
-          <div class="cover">${coverHtml}</div>
-          <div class="info">
-            <h1>${esc(book.title)}</h1>
-            <p class="author">${esc(book.author)}</p>
-            <div class="meta-grid">
-              ${facProdi}
-              ${book.publisher ? `<span><strong>Penerbit</strong><br>${esc(book.publisher)}</span>` : ""}
-              ${book.publication_year ? `<span><strong>Tahun</strong><br>${book.publication_year}</span>` : ""}
-              ${book.isbn ? `<span><strong>ISBN</strong><br>${esc(book.isbn)}</span>` : ""}
-              ${book.page_count ? `<span><strong>Halaman</strong><br>${book.page_count}</span>` : ""}
-              <span><strong>Akses</strong><br>${book.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
-              <span><strong>Dilihat</strong><br>${book.views}x</span>
-            </div>
-            ${desc}
-            <a href="/baca/${esc(book.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
-          </div>
-        </div>
-      </div>
-    </div>`;
+	if (
+		current.access_type === "internal" &&
+		(!user ||
+			!["mahasiswa", "admin", "super_admin", "pustakawan"].includes(
+				user.roleName,
+			))
+	) {
+		return c.html(
+			errorPage(
+				403,
+				"Akses Ditolak",
+				"Buku ini hanya untuk akses internal kampus.",
+				user,
+			),
+			403,
+		);
+	}
 
-	return c.html(layout(book.title, body, user, flash));
+	await query("UPDATE books SET views = views + 1 WHERE id = ?", [current.id]);
+
+	const seo = {
+		description: current.description
+			? current.description.slice(0, 160)
+			: `Baca ${current.title} oleh ${current.author} di Perpustakaan Digital SARI.`,
+		ogImage: current.cover_image
+			? `/uploads/covers/${current.cover_image}`
+			: "/assets/images/og-default.jpg",
+		ogType: "book",
+	};
+
+	const coverHtml = current.cover_image
+		? `<img src="/uploads/covers/${esc(current.cover_image)}" alt="${esc(current.title)}" class="book-detail-cover">`
+		: '<div class="book-detail-cover placeholder">—</div>';
+
+	const desc = current.description
+		? `<div class="description"><h3>Sinopsis</h3><p>${esc(current.description).replace(/\n/g, "<br>")}</p></div>`
+		: "";
+
+	const facProdi = current.faculty_name
+		? `<span><strong>Fakultas/Prodi</strong><br>${esc(current.faculty_name)}${current.program_name ? " — " + esc(current.program_name) : ""}</span>`
+		: "";
+
+	const body = `
+	<section class="book-detail">
+	  <div class="container">
+	    <nav class="breadcrumb" aria-label="Breadcrumb">
+	      <a href="/">Beranda</a> <span>/</span>
+	      <a href="/buku">Katalog</a> <span>/</span>
+	      <span>${esc(current.title)}</span>
+	    </nav>
+	    <div class="book-detail-grid">
+	      <div class="book-detail-cover-wrap">${coverHtml}</div>
+	      <div class="book-detail-info">
+	        <h1>${esc(current.title)}</h1>
+	        <p class="author">${esc(current.author)}</p>
+	        <div class="meta-grid">
+	          ${facProdi}
+	          ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
+	          ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
+	          ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
+	          ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
+	          <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
+	          <span><strong>Dilihat</strong><br>${current.views}x</span>
+	        </div>
+	        ${desc}
+	        <div class="modal-actions">
+	          <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
+	        </div>
+	      </div>
+	    </div>
+	  </div>
+	</section>`;
+
+	return c.html(
+		layout(`${esc(current.title)} | Katalog`, body, user, null, seo),
+	);
 }
 
 // ── Flip-Book Reader (cepat) ──
@@ -351,7 +522,7 @@ body{background:#2a2d32;font-family:Nunito,sans-serif;overflow:hidden;height:100
   <span class="spacer"></span>
   <span class="title">${esc(book.title)}</span>
   <span class="spacer"></span>
-  <a href="/buku/${esc(book.slug)}">✕ Tutup</a>
+  <a href="/buku">✕ Tutup</a>
 </div>
 <div id="reader-wrapper">
   <div id="canvas-wrap">
