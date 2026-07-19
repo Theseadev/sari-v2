@@ -1,5 +1,19 @@
 // public/assets/js/app.js - SARI v2
 console.log("[app.js] loaded");
+
+// ── Anti-Inspection ──
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', function(e) {
+	if (e.key === 'F12') { e.preventDefault(); return false; }
+	if (e.ctrlKey && e.shiftKey && 'IiJjCc'.includes(e.key)) { e.preventDefault(); return false; }
+	if (e.ctrlKey && 'UuSs'.includes(e.key)) { e.preventDefault(); return false; }
+});
+
+// Force re-add if removed
+const _origAdd = EventTarget.prototype.addEventListener;
+const _protected = new Set(['contextmenu']);
+
+
 document.addEventListener("DOMContentLoaded", function () {
 	// Restore scroll position after form submit (faculty/prodi filter)
 	const savedScroll = sessionStorage.getItem("scrollY");
