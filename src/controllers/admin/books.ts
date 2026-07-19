@@ -3,9 +3,10 @@
 import type { Context } from "hono";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { join } from "node:path";
+import * as XLSX from "xlsx";
 import { query, queryOne } from "../../config/database";
 import { APP } from "../../config/app";
-import { bookList, bookForm } from "../../views/admin/books";
+import { bookList, bookForm, bulkUploadForm } from "../../views/admin/books";
 import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
@@ -92,12 +93,11 @@ export async function store(c: Context) {
 	}
 
 	await query(
-		`INSERT INTO books (category_id, program_id, uploaded_by, title, slug, author,
+		`INSERT INTO books (program_id, uploaded_by, title, slug, author,
       publisher, publication_year, isbn, description, access_type,
       file_path, cover_image, page_count, file_size)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
-			1, // default category_id
 			programId,
 			user.userId,
 			title,
@@ -194,7 +194,7 @@ export async function update(c: Context) {
 
 	await query(
 		`UPDATE books SET title=?, author=?, publisher=?, publication_year=?, isbn=?,
-      description=?, access_type=?, category_id=?, program_id=?, cover_image=?
+      description=?, access_type=?, program_id=?, cover_image=?
    WHERE id=?`,
 		[
 			title,
@@ -204,7 +204,6 @@ export async function update(c: Context) {
 			body.isbn || null,
 			body.description || null,
 			body.access_type || "public",
-			1, // default category_id
 			Number(body.program_id) || null,
 			coverPath,
 			id,
@@ -257,6 +256,237 @@ export async function remove(c: Context) {
 	);
 
 	setFlash(c, `Buku "${book.title}" berhasil dihapus.`, "success");
+	return c.redirect("/admin/books");
+}
+
+// ── Bulk Excel Template ──
+export async function bulkTemplate(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+
+	const wb = XLSX.utils.book_new();
+	const data = [
+		{
+			"Judul": "Buku Ajar Matematika",
+			"Penulis": "Dr. Budi Santoso",
+			"Sinopsis": "Buku ajar matematika untuk mahasiswa S1",
+			"Penerbit": "Erlangga",
+			"Tahun": 2024,
+			"ISBN": "978-602-xxx-xxx-1",
+			"Program Studi": "Teknik Informatika",
+			"Akses": "public",
+			"File PDF": "matematika.pdf",
+			"Cover": "matematika.jpg",
+		},
+		{
+			"Judul": "Tesis Analisis Data",
+			"Penulis": "Siti Aminah",
+			"Sinopsis": "Tesis analisis data statistik",
+			"Penerbit": "",
+			"Tahun": 2023,
+			"ISBN": "",
+			"Program Studi": "",
+			"Akses": "internal",
+			"File PDF": "tesis-siti.pdf",
+			"Cover": "",
+		},
+	];
+
+	const ws = XLSX.utils.json_to_sheet(data);
+
+	// Set column widths
+	ws["!cols"] = [
+		{ wch: 30 }, // Judul
+		{ wch: 25 }, // Penulis
+		{ wch: 40 }, // Sinopsis
+		{ wch: 20 }, // Penerbit
+		{ wch: 8 },  // Tahun
+		{ wch: 20 }, // ISBN
+		{ wch: 25 }, // Program Studi
+		{ wch: 10 }, // Akses
+		{ wch: 25 }, // File PDF
+		{ wch: 20 }, // Cover
+	];
+
+	XLSX.utils.book_append_sheet(wb, ws, "Buku");
+	const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+	return new Response(buf, {
+		headers: {
+			"Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			"Content-Disposition": 'attachment; filename="format-upload-buku.xlsx"',
+		},
+	});
+}
+
+// ── Bulk Upload Form ──
+export async function bulkForm(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+
+	const progs = await query<
+		{ id: number; name: string; faculty_name: string }[]
+	>(
+		`SELECT p.id, p.name, f.name AS faculty_name FROM programs p JOIN faculties f ON f.id = p.faculty_id ORDER BY f.name, p.name`,
+	);
+	return c.html(
+		bulkUploadForm({ name: user.name, roleName: user.roleName }, progs),
+	);
+}
+
+// ── Bulk Store ──
+export async function bulkStore(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+
+	const formData = await c.req.formData();
+	const programId = Number(formData.get("program_id")) || null;
+
+	// Parse Excel file
+	const excelFile = formData.get("excel_file");
+	if (!excelFile || typeof excelFile !== "object" || !("arrayBuffer" in excelFile)) {
+		setFlash(c, "Upload file Excel (.xlsx).", "danger");
+		return c.redirect("/admin/books/bulk");
+	}
+
+	const excelBuf = Buffer.from(await excelFile.arrayBuffer());
+	const workbook = XLSX.read(excelBuf, { type: "buffer" });
+	const sheet = workbook.Sheets[workbook.SheetNames[0]];
+	const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+
+	if (rows.length === 0) {
+		setFlash(c, "File Excel kosong.", "danger");
+		return c.redirect("/admin/books/bulk");
+	}
+
+	// Index PDF files by name
+	const pdfFilesRaw = formData.getAll("pdf_files");
+	const pdfMap = new Map<string, File>();
+	for (const f of pdfFilesRaw) {
+		if (f instanceof File) pdfMap.set(f.name, f);
+	}
+
+	// Index cover files by name
+	const coverFilesRaw = formData.getAll("cover_files");
+	console.log("Cover files count:", coverFilesRaw.length);
+	const coverMap = new Map<string, File>();
+	for (const f of coverFilesRaw) {
+		if (f instanceof File) {
+			console.log("Cover:", f.name);
+			coverMap.set(f.name, f);
+		}
+	}
+
+	// Fetch all programs for name lookup
+	const allProgs = await query<{ id: number; name: string }[]>(
+		`SELECT id, name FROM programs`,
+	);
+	const progMap = new Map(allProgs.map((p) => [p.name.toLowerCase(), p.id]));
+
+	await mkdir(APP.PDF_PATH, { recursive: true });
+	await mkdir(APP.COVER_PATH, { recursive: true });
+	let successCount = 0;
+	let failCount = 0;
+
+	for (const row of rows) {
+		const title = String(row["Judul"] || row["judul"] || "").trim();
+		const author = String(row["Penulis"] || row["penulis"] || "Penulis Unknown").trim();
+		const description = String(row["Sinopsis"] || row["sinopsis"] || "").trim() || null;
+		const pub = String(row["Penerbit"] || row["penerbit"] || "").trim() || null;
+		const year = row["Tahun"] || row["tahun"] ? Number(row["Tahun"] || row["tahun"]) : null;
+		const isbn = String(row["ISBN"] || row["isbn"] || "").trim() || null;
+		const access = String(row["Akses"] || row["akses"] || "public").trim();
+		const prodiName = String(row["Program Studi"] || row["program studi"] || "").trim();
+		const pdfName = String(row["File PDF"] || row["file pdf"] || row["File_PDF"] || "").trim();
+		const coverName = String(row["Cover"] || row["cover"] || "").trim();
+
+		if (!title || !pdfName) {
+			failCount++;
+			continue;
+		}
+
+		pdfName.replace(/\.pdf$/i, "");
+
+		const pdfFile = pdfMap.get(pdfName) || pdfMap.get(pdfName + ".pdf");
+		if (!pdfFile || typeof pdfFile !== "object" || !("arrayBuffer" in pdfFile)) {
+			failCount++;
+			continue;
+		}
+
+		try {
+			const slug = `${makeSlug(title)}-${Date.now()}`;
+
+			// Save PDF
+			const pdfBuf = Buffer.from(await pdfFile.arrayBuffer());
+			const pdfFilename = `${slug}.pdf`;
+			await writeFile(join(APP.PDF_PATH, pdfFilename), pdfBuf);
+
+			// Save cover (optional)
+			let coverPath: string | null = null;
+			if (coverName) {
+				const coverFile = coverMap.get(coverName);
+				if (coverFile && typeof coverFile === "object" && "arrayBuffer" in coverFile) {
+					const ext = coverName.split(".").pop() || "jpg";
+					const buf = Buffer.from(await coverFile.arrayBuffer());
+					const filename = `${slug}-cover.${ext}`;
+					await writeFile(join(APP.COVER_PATH, filename), buf);
+					coverPath = filename;
+				}
+			}
+
+			const pageCount = Math.max(1, Math.round(pdfBuf.length / 100_000));
+
+			// Resolve program_id from Excel or fallback to default
+			const rowProgramId = prodiName ? (progMap.get(prodiName.toLowerCase()) || programId) : programId;
+
+			await query(
+				`INSERT INTO books (program_id, uploaded_by, title, slug, author,
+      publisher, publication_year, isbn, description, access_type,
+      file_path, cover_image, page_count, file_size)
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+				[
+					rowProgramId,
+					user.userId,
+					title,
+					slug,
+					author,
+					pub,
+					year,
+					isbn,
+					description,
+					access === "internal" ? "internal" : "public",
+					pdfFilename,
+					coverPath,
+					pageCount,
+					pdfBuf.length,
+				],
+			);
+			successCount++;
+		} catch (e) {
+			console.error("Insert error:", e);
+			failCount++;
+		}
+	}
+
+	if (successCount > 0) {
+		await query(
+			`INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)`,
+			[
+				user.userId,
+				"bulk_upload",
+				`Upload bulk ${successCount} buku dari Excel`,
+				c.req.header("x-forwarded-for") || "local",
+			],
+		);
+	}
+
+	const msg = failCount > 0
+		? `${successCount} buku berhasil, ${failCount} gagal.`
+		: `${successCount} buku berhasil diupload.`;
+	setFlash(c, msg, successCount > 0 ? "success" : "danger");
 	return c.redirect("/admin/books");
 }
 

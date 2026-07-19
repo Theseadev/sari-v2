@@ -78,6 +78,9 @@ app.post("/admin/books/create", (c) => booksCrud.store(c));
 app.get("/admin/books/:id/edit", (c) => booksCrud.editForm(c));
 app.post("/admin/books/:id/update", (c) => booksCrud.update(c));
 app.post("/admin/books/:id/delete", (c) => booksCrud.remove(c));
+app.get("/admin/books/bulk", (c) => booksCrud.bulkForm(c));
+app.get("/admin/books/bulk/template", (c) => booksCrud.bulkTemplate(c));
+app.post("/admin/books/bulk-store", (c) => booksCrud.bulkStore(c));
 
 // Users CRUD (super_admin)
 app.get("/admin/users", (c) => usersCrud.list(c));

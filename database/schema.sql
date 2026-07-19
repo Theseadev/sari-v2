@@ -129,7 +129,7 @@ INSERT INTO programs (id, faculty_id, name, slug) VALUES
 -- -----------------------------------------------------
 CREATE TABLE books (
     id              INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
-    category_id     INT UNSIGNED    NOT NULL,
+    category_id     INT UNSIGNED    DEFAULT NULL,
     program_id      INT UNSIGNED    DEFAULT NULL,
     uploaded_by     INT UNSIGNED    NOT NULL,
     title           VARCHAR(300)    NOT NULL,
