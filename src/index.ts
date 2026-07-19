@@ -44,6 +44,7 @@ app.post("/reset-password", (c) => password.reset(c));
 
 // Profile
 app.get("/profil", (c) => profile.profile(c));
+app.get("/profil/modal", (c) => profile.profileModal(c));
 app.get("/profil/ganti-password", (c) => profile.changePasswordForm(c));
 app.post("/profil/ganti-password", (c) => profile.changePassword(c));
 

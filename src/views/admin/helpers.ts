@@ -1,6 +1,7 @@
 // src/views/admin/helpers.ts — Shared admin HTML helpers
 
 import { esc } from "../../helpers";
+import { csrfToken } from "../html";
 
 export function adminLayout(
 	title: string,
@@ -15,6 +16,8 @@ export function adminLayout(
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${esc(title)} - SARI Admin</title>
 <link rel="stylesheet" href="/assets/css/style.css">
+<meta name="csrf-token" content="${esc(csrfToken())}">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 <header class="admin-header-bar">
@@ -59,6 +62,7 @@ export function adminLayout(
     </div>
   </main>
 </div>
+<script src="/assets/js/app.js"></script>
 </body>
 </html>`;
 }

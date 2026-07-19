@@ -21,9 +21,23 @@ export async function toggle(c: Context) {
 
 	if (existing) {
 		await query("DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?", [user.userId, bookId]);
+		// Log activity
+		const book = await queryOne<{ title: string }>("SELECT title FROM books WHERE id = ?", [bookId]);
+		const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+		await query(
+			"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+			[user.userId, "remove_bookmark", `Hapus bookmark: ${book?.title ?? "#" + bookId}`, ip],
+		);
 		setCookie(c, "flash", JSON.stringify({ type: "info", message: "Bookmark dihapus." }), { httpOnly: true, path: "/", maxAge: 5 });
 	} else {
 		await query("INSERT INTO bookmarks (user_id, book_id) VALUES (?, ?)", [user.userId, bookId]);
+		// Log activity
+		const book = await queryOne<{ title: string }>("SELECT title FROM books WHERE id = ?", [bookId]);
+		const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+		await query(
+			"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+			[user.userId, "add_bookmark", `Tambah bookmark: ${book?.title ?? "#" + bookId}`, ip],
+		);
 		setCookie(c, "flash", JSON.stringify({ type: "success", message: "Berhasil ditambahkan ke bookmark!" }), { httpOnly: true, path: "/", maxAge: 5 });
 	}
 

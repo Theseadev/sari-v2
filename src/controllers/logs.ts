@@ -10,6 +10,7 @@ import { getUser, getFlash } from "../helpers";
 export async function logs(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const _flash = getFlash(c);
 
 	const rows = await query<ActivityLog[]>(

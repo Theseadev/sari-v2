@@ -30,7 +30,7 @@ export function facList(
         <td>${f.program_count ?? 0}</td>
         <td class="nowrap">
           <a href="/admin/faculties/${f.id}/edit" class="btn-sm">Edit</a>
-          <form method="POST" action="/admin/faculties/${f.id}/delete" style="display:inline" onsubmit="return confirm('Hapus fakultas ini? Program studi terkait juga akan terpengaruh.')">
+          <form method="POST" action="/admin/faculties/${f.id}/delete" style="display:inline">
             <button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button>
           </form>
         </td>

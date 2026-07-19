@@ -30,7 +30,7 @@ export function catList(
         <td>${c.book_count ?? 0}</td>
         <td class="nowrap">
           <a href="/admin/categories/${c.id}/edit" class="btn-sm">Edit</a>
-          <form method="POST" action="/admin/categories/${c.id}/delete" style="display:inline" onsubmit="return confirm('Hapus kategori ini?')">
+          <form method="POST" action="/admin/categories/${c.id}/delete" style="display:inline">
             <button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button>
           </form>
         </td>

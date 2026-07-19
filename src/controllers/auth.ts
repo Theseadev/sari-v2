@@ -192,16 +192,33 @@ export async function login(c: Context) {
 		maxAge: 5,
 	});
 
+	// Log activity
+	await query(
+		"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+		[user.id, "login", `Login: ${user.name}`, ip],
+	);
+
 	return c.redirect(redirectTo);
 }
 
 export async function logout(c: Context) {
+	const user = getUser(c);
 	deleteCookie(c, "token", { path: "/" });
 	setCookie(c, "flash", JSON.stringify({ type: "success", message: "Berhasil logout." }), {
 		httpOnly: true,
 		path: "/",
 		maxAge: 5,
 	});
+
+	// Log activity
+	if (user) {
+		const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+		await query(
+			"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+			[user.userId, "logout", `Logout: ${user.name}`, ip],
+		);
+	}
+
 	return c.redirect("/buku");
 }
 
@@ -257,14 +274,40 @@ export async function register(c: Context) {
 		[username, name, email, passwordHash, role.id, "active"],
 	);
 
+	// Get user ID for auto-login
+	const newUser = await queryOne<{ id: number }>("SELECT id FROM users WHERE email = ?", [email]);
+
 	loginAttempts.delete(ip);
 
-	return setFlashRedirect(
-		c,
-		"/?auth=login",
-		"Pendaftaran berhasil! Silakan masuk.",
-		"success",
+	// Auto-login: create token and redirect
+	const payload: JwtPayload = {
+		userId: newUser!.id,
+		roleName: "mahasiswa",
+		name: name,
+	};
+	const token = jwt.sign(payload, APP.JWT_SECRET, { expiresIn: 86400 });
+
+	setCookie(c, "token", token, {
+		httpOnly: true,
+		secure: !APP.DEBUG,
+		sameSite: "Lax",
+		path: "/",
+		maxAge: 86400,
+	});
+
+	// Log activity
+	await query(
+		"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+		[newUser!.id, "register", `Register: ${name}`, ip],
 	);
+
+	setCookie(c, "flash", JSON.stringify({ type: "success", message: `Selamat datang, ${esc(name)}! Akun berhasil dibuat.` }), {
+		httpOnly: true,
+		path: "/",
+		maxAge: 5,
+	});
+
+	return c.redirect("/");
 }
 
 // ---- Sitemap ----

@@ -40,7 +40,7 @@ export function userList(
         <td><small>${u.last_login ? new Date(u.last_login).toLocaleDateString("id-ID") : "—"}</small></td>
         <td class="nowrap">
           <a href="/admin/users/${u.id}/edit" class="btn-sm">Edit</a>
-          ${u.role_name !== "super_admin" ? `<form method="POST" action="/admin/users/${u.id}/delete" style="display:inline" onsubmit="return confirm('Hapus user ini?')"><button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button></form>` : ""}
+          ${u.role_name !== "super_admin" ? `<form method="POST" action="/admin/users/${u.id}/delete" style="display:inline"><button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button></form>` : ""}
         </td>
       </tr>`;
 		}

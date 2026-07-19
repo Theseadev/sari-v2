@@ -31,7 +31,7 @@ export function progList(
         <td><small class="text-muted">/${esc(p.slug)}</small></td>
         <td class="nowrap">
           <a href="/admin/programs/${p.id}/edit" class="btn-sm">Edit</a>
-          <form method="POST" action="/admin/programs/${p.id}/delete" style="display:inline" onsubmit="return confirm('Hapus program studi ini?')">
+          <form method="POST" action="/admin/programs/${p.id}/delete" style="display:inline">
             <button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button>
           </form>
         </td>

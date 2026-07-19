@@ -16,9 +16,10 @@ export function layout(
     <li class="user-dropdown-wrap">
       <a href="#" class="badge ${user.roleName} user-dropdown-trigger">${esc(user.name)} <span style="font-size:0.6rem;margin-left:2px">▾</span></a>
       <div class="user-dropdown">
-        <a href="/profil">Profil</a>
+        <a href="#" id="openProfil">Profil</a>
         <a href="#" id="openBookmarks">Bookmark</a>
         <a href="#" id="openRiwayat">Riwayat</a>
+        <a href="/profil/ganti-password" style="color:var(--primary)">Ganti Password</a>
         <a href="/logout" class="dd-logout">Logout</a>
       </div>
     </li>`
@@ -179,12 +180,20 @@ ${
   </div>
 </div>
 
+<div id="profilModal" class="modal-overlay">
+  <div class="modal-card modal-sm">
+    <button class="modal-close" id="closeProfilModal">&times;</button>
+    <h2 style="font-family:var(--font-heading);margin-bottom:16px">👤 Profil Saya</h2>
+    <div id="profilModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
+  </div>
+</div>
+
 <script src="/assets/js/app.js"></script>
 </body>
 </html>`;
 }
 
-function csrfToken(): string {
+export function csrfToken(): string {
 	// Ponytail: simple HMAC-based token for CSRF (stateless, no session storage needed)
 	const secret =
 		process.env.CSRF_SECRET || "sari-csrf-dev-change-in-production";

@@ -39,7 +39,7 @@ export function bookList(
         <td><small>${b.created_at?.slice(0, 10) ?? ""}</small></td>
         <td class="nowrap">
           <a href="/admin/books/${b.id}/edit" class="btn-sm">Edit</a>
-          <form method="POST" action="/admin/books/${b.id}/delete" style="display:inline" onsubmit="return confirm('Hapus buku ini?')">
+          <form method="POST" action="/admin/books/${b.id}/delete" style="display:inline">
             <button type="submit" class="btn-sm" style="background:#fef2f2;color:#b91c1c">Hapus</button>
           </form>
         </td>

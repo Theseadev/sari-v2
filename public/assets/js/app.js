@@ -307,6 +307,63 @@ document.addEventListener("DOMContentLoaded", function () {
 		});
 	}
 
+	// --- Profil Modal ---
+	var prOpenBtn = document.getElementById("openProfil");
+	var prModal = document.getElementById("profilModal");
+	var prCloseBtn = document.getElementById("closeProfilModal");
+	var prContent = document.getElementById("profilModalContent");
+
+	if (prOpenBtn && prModal) {
+		prOpenBtn.addEventListener("click", function (e) {
+			e.preventDefault();
+			if (prContent) {
+				prContent.innerHTML = "Memuat...";
+				fetch("/profil/modal")
+					.then(function (r) { return r.text(); })
+					.then(function (html) { prContent.innerHTML = html; })
+					.catch(function () { prContent.innerHTML = "<p style='padding:20px;text-align:center;color:var(--danger)'>Gagal memuat.</p>"; });
+			}
+			prModal.classList.remove("closing");
+			prModal.classList.add("show");
+		});
+		prModal.addEventListener("click", function (e) {
+			if (e.target === prModal) {
+				prModal.classList.remove("show");
+				prModal.classList.add("closing");
+				setTimeout(function () { prModal.classList.remove("closing"); }, 250);
+			}
+		});
+	}
+	if (prCloseBtn && prModal) {
+		prCloseBtn.addEventListener("click", function () {
+			prModal.classList.remove("show");
+			prModal.classList.add("closing");
+			setTimeout(function () { prModal.classList.remove("closing"); }, 250);
+		});
+	}
+
+	// SweetAlert2 delete confirm
+	document.body.addEventListener("click", function (e) {
+		var btn = e.target.closest("button[onclick]", "form[onsubmit]");
+		var form = e.target.closest("form[action*='/delete']");
+		if (!form) return;
+		var submitBtn = form.querySelector("button[type='submit']");
+		if (e.target !== submitBtn) return;
+		e.preventDefault();
+		Swal.fire({
+			title: "Yakin hapus?",
+			text: "Data yang dihapus tidak bisa dikembalikan.",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#b91c1c",
+			cancelButtonColor: "#6b7280",
+			confirmButtonText: "Ya, hapus!",
+			cancelButtonText: "Batal",
+		}).then(function (result) {
+			if (result.isConfirmed) form.submit();
+		});
+	});
+
 	// User dropdown toggle
 	document.querySelectorAll(".user-dropdown-trigger").forEach(function (trigger) {
 		trigger.addEventListener("click", function (e) {

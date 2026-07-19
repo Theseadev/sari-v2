@@ -6,6 +6,42 @@ import { query, queryOne } from "../config/database";
 import { layout } from "../views/html";
 import { getUser, getFlash, setFlashRedirect, esc } from "../helpers";
 
+// Profile modal (AJAX)
+export async function profileModal(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.html("<p style='padding:20px;text-align:center;color:var(--text-muted)'>Silakan masuk terlebih dahulu.</p>");
+
+	const dbUser = await queryOne<{ name: string; email: string; username: string; nim_nip: string | null; created_at: string }>(
+		"SELECT name, email, username, nim_nip, created_at FROM users WHERE id = ?",
+		[user.userId],
+	);
+
+	return c.html(`
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)">
+        <span style="color:var(--text-muted);font-size:0.82rem;width:100px">Nama</span>
+        <strong style="font-size:0.85rem;text-align:right;flex:1">${esc(dbUser?.name || user.name)}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)">
+        <span style="color:var(--text-muted);font-size:0.82rem;width:100px">Email</span>
+        <strong style="font-size:0.85rem;text-align:right;flex:1;word-break:break-all">${esc(dbUser?.email || "")}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)">
+        <span style="color:var(--text-muted);font-size:0.82rem;width:100px">Username</span>
+        <strong style="font-size:0.85rem;text-align:right;flex:1">${esc(dbUser?.username || "")}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)">
+        <span style="color:var(--text-muted);font-size:0.82rem;width:100px">NIM/NIP</span>
+        <strong style="font-size:0.85rem;text-align:right;flex:1">${esc(dbUser?.nim_nip || "-")}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0">
+        <span style="color:var(--text-muted);font-size:0.82rem;width:100px">Role</span>
+        <span class="badge ${user.roleName}" style="font-size:0.72rem;text-transform:capitalize">${esc(user.roleName)}</span>
+      </div>
+    </div>
+  `);
+}
+
 export async function profile(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
