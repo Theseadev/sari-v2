@@ -1,7 +1,6 @@
 // src/controllers/books.ts - Katalog, detail, flip-book reader
 
 import type { Context } from "hono";
-import { getCookie } from "hono/cookie";
 import { query, queryOne } from "../config/database";
 import type { Book, Faculty, Program } from "../types";
 import { esc } from "../helpers";
@@ -86,22 +85,20 @@ export async function catalog(c: Context) {
 				? "<span>" + esc(b.program_name) + "</span>"
 				: "";
 			bookCards += `
-        <div class="book-card">
-          <a href="/buku/${esc(b.slug)}">
-            <div class="cover-wrap">
-              ${cover}
-              ${badge}
-              ${viewsBadge}
+        <div class="book-card" data-book-slug="${esc(b.slug)}" data-book-title="${esc(b.title)}">
+          <div class="cover-wrap">
+            ${cover}
+            ${badge}
+            ${viewsBadge}
+          </div>
+          <div class="info">
+            <h3>${esc(b.title)}</h3>
+            <p class="author">${esc(b.author)}</p>
+            <div class="meta">
+              ${prodi ? `<span class="meta-badge">${prodi}</span>` : ""}
+              <span class="meta-stat"><span class="stat-icon">📄</span>${b.page_count} hlm</span>
             </div>
-            <div class="info">
-              <h3>${esc(b.title)}</h3>
-              <p class="author">${esc(b.author)}</p>
-              <div class="meta">
-                ${prodi ? `<span class="meta-badge">${prodi}</span>` : ""}
-                <span class="meta-stat"><span class="stat-icon">📄</span>${b.page_count} hlm</span>
-              </div>
-            </div>
-          </a>
+          </div>
         </div>`;
 		}
 	}
@@ -167,6 +164,7 @@ export async function detail(c: Context) {
 	const user = getUser(c);
 	const slug = c.req.param("slug");
 	const flash = getFlash(c);
+	const isModal = c.req.query("modal") === "1";
 
 	const book = await queryOne<Book>(
 		`SELECT b.*, u.name AS uploader_name,
@@ -217,6 +215,40 @@ export async function detail(c: Context) {
 	const facProdi = book.faculty_name
 		? `<span><strong>Fakultas/Prodi</strong><br>${esc(book.faculty_name)}${book.program_name ? " — " + esc(book.program_name) : ""}</span>`
 		: "";
+
+	const modalBody = `
+    <div class="modal-overlay show" id="bookModal" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
+      <div class="modal-card modal-lg">
+        <button class="modal-close" id="closeBookModal" aria-label="Tutup">&times;</button>
+        <div class="modal-body">
+          <div class="book-modal-grid">
+            <div class="book-modal-cover">${coverHtml}</div>
+            <div class="book-modal-info">
+              <h2 id="bookModalTitle">${esc(book.title)}</h2>
+              <p class="author">${esc(book.author)}</p>
+              <div class="meta-grid">
+                ${facProdi}
+                ${book.publisher ? `<span><strong>Penerbit</strong><br>${esc(book.publisher)}</span>` : ""}
+                ${book.publication_year ? `<span><strong>Tahun</strong><br>${book.publication_year}</span>` : ""}
+                ${book.isbn ? `<span><strong>ISBN</strong><br>${esc(book.isbn)}</span>` : ""}
+                ${book.page_count ? `<span><strong>Halaman</strong><br>${book.page_count}</span>` : ""}
+                <span><strong>Akses</strong><br>${book.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
+                <span><strong>Dilihat</strong><br>${book.views}x</span>
+              </div>
+              ${desc}
+              <div class="modal-actions">
+                <a href="/baca/${esc(book.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
+                <a href="/buku/${esc(book.slug)}" class="btn btn-outline btn-lg">Lihat Halaman Lengkap</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+	if (isModal) {
+		return c.html(modalBody);
+	}
 
 	const body = `
     <div class="detail-section">

@@ -1546,3 +1546,104 @@ a.qa-card:hover {
 .recent-logs {
 	margin-bottom: 20px;
 }
+
+/* ===== BOOK MODAL ===== */
+.modal-overlay#bookModal {
+    z-index: 300;
+}
+.modal-card.modal-lg {
+    max-width: 900px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.book-modal-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+}
+.book-modal-cover {
+    position: sticky;
+    top: 20px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-light);
+    background: var(--bg-warm);
+    aspect-ratio: 3 / 4;
+}
+.book-modal-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.book-modal-info h2 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text-heading);
+}
+.book-modal-info .author {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    font-style: italic;
+}
+.book-modal-info .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: var(--bg-warm);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+}
+.book-modal-info .meta-grid span {
+    color: var(--text-muted);
+}
+.book-modal-info .meta-grid strong {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+.book-modal-info .description {
+    margin-bottom: 24px;
+}
+.book-modal-info .description h3 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+.book-modal-info .description p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+}
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .book-modal-grid {
+        grid-template-columns: 1fr;
+    }
+    .book-modal-cover {
+        max-width: 280px;
+        margin: 0 auto;
+        position: static;
+    }
+    .book-modal-info .meta-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-actions {
+        flex-direction: column;
+    }
+    .modal-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

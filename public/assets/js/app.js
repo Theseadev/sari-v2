@@ -15,6 +15,74 @@ document.addEventListener("DOMContentLoaded", function () {
 		}, 5000);
 	});
 
+	// --- Book Detail Modal ---
+	let currentBookModal = null;
+
+	function openBookModal(slug, originEl) {
+		fetch("/buku/" + slug + "?modal=1")
+			.then((r) => r.text())
+			.then((html) => {
+				// Remove existing modal if any
+				closeBookModal();
+
+				const container = document.createElement("div");
+				container.innerHTML = html;
+				const modal = container.querySelector(".modal-overlay");
+				if (!modal) return;
+
+				// Set transform origin for animation
+				if (originEl) {
+					const rect = originEl.getBoundingClientRect();
+					const originX = rect.left + rect.width / 2;
+					const originY = rect.top + rect.height / 2;
+					const card = modal.querySelector(".modal-card");
+					if (card) card.style.transformOrigin = originX + "px " + originY + "px";
+				}
+
+				document.body.appendChild(modal);
+				currentBookModal = modal;
+
+				// Trigger animation
+				requestAnimationFrame(() => {
+					modal.classList.add("show");
+				});
+
+				// Close handlers
+				const closeBtn = modal.querySelector(".modal-close");
+				if (closeBtn) closeBtn.addEventListener("click", closeBookModal);
+				modal.addEventListener("click", (e) => {
+					if (e.target === modal) closeBookModal();
+				});
+				document.addEventListener("keydown", onKeydown);
+
+				function onKeydown(e) {
+					if (e.key === "Escape") closeBookModal();
+				}
+			})
+			.catch(console.error);
+	}
+
+	function closeBookModal() {
+		if (!currentBookModal) return;
+		currentBookModal.classList.remove("show");
+		currentBookModal.classList.add("closing");
+		setTimeout(() => {
+			currentBookModal.remove();
+			currentBookModal = null;
+		}, 250);
+		document.removeEventListener("keydown", onKeydown);
+	}
+
+	// Delegated click on book cards
+	document.body.addEventListener("click", function (e) {
+		const card = e.target.closest(".book-card");
+		if (!card) return;
+
+		e.preventDefault();
+		const slug = card.dataset.bookSlug;
+		if (slug) openBookModal(slug, card);
+	});
+
 	// Login modal — animate from button to center
 	var loginBtn = document.getElementById("openLogin");
 	var modal = document.getElementById("loginModal");
