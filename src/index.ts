@@ -47,9 +47,10 @@ app.get("/profil", (c) => profile.profile(c));
 app.get("/profil/ganti-password", (c) => profile.changePasswordForm(c));
 app.post("/profil/ganti-password", (c) => profile.changePassword(c));
 
-// Bookmarks
-app.get("/bookmark", (c) => bookmarks.list(c));
+// Bookmarks (toggle + modal data)
 app.post("/bookmark/:id/toggle", (c) => bookmarks.toggle(c));
+app.get("/bookmark/modal", (c) => bookmarks.modal(c));
+app.get("/riwayat/modal", (c) => bookmarks.historyModal(c));
 app.get("/riwayat", (c) => bookmarks.history(c));
 
 // Sitemap

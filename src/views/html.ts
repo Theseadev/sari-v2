@@ -12,14 +12,13 @@ export function layout(
 	seo?: { description?: string; ogImage?: string; ogType?: string },
 ): string {
 	const navRight = user
-		? `
+		? `${["admin", "super_admin", "pustakawan"].includes(user.roleName) ? '<li><a href="/admin">Dashboard</a></li>' : ""}
     <li class="user-dropdown-wrap">
       <a href="#" class="badge ${user.roleName} user-dropdown-trigger">${esc(user.name)} <span style="font-size:0.6rem;margin-left:2px">▾</span></a>
       <div class="user-dropdown">
         <a href="/profil">Profil</a>
-        <a href="/bookmark">Bookmark</a>
-        <a href="/riwayat">Riwayat</a>
-        ${["admin", "super_admin", "pustakawan"].includes(user.roleName) ? '<a href="/admin">Dashboard</a>' : ""}
+        <a href="#" id="openBookmarks">Bookmark</a>
+        <a href="#" id="openRiwayat">Riwayat</a>
         <a href="/logout" class="dd-logout">Logout</a>
       </div>
     </li>`
@@ -163,6 +162,22 @@ ${
     </div>
   </div>
 </footer>
+
+<div id="bookmarkModal" class="modal-overlay">
+  <div class="modal-card">
+    <button class="modal-close" id="closeBookmarkModal">&times;</button>
+    <h2 style="font-family:var(--font-heading);margin-bottom:16px">🔖 Bookmark Saya</h2>
+    <div id="bookmarkModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
+  </div>
+</div>
+
+<div id="riwayatModal" class="modal-overlay">
+  <div class="modal-card">
+    <button class="modal-close" id="closeRiwayatModal">&times;</button>
+    <h2 style="font-family:var(--font-heading);margin-bottom:16px">📖 Riwayat Baca</h2>
+    <div id="riwayatModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
+  </div>
+</div>
 
 <script src="/assets/js/app.js"></script>
 </body>

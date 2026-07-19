@@ -14,6 +14,12 @@ export const csrfProtection: MiddlewareHandler = async (c, next) => {
 		return;
 	}
 
+	// Skip CSRF untuk bookmark toggle (action non-sensitif)
+	if (c.req.path.includes("/bookmark/")) {
+		await next();
+		return;
+	}
+
 	// Get token from header (for fetch/XHR) or form body
 	const headerToken =
 		c.req.header("x-csrf-token") || c.req.header("csrf-token");

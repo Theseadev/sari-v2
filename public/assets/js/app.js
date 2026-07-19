@@ -66,6 +66,20 @@ document.addEventListener("DOMContentLoaded", function () {
 				document.body.appendChild(modal);
 				currentBookModal = modal;
 
+				// Inject CSRF token ke form di modal
+				const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+				if (csrfToken) {
+					modal.querySelectorAll("form").forEach(function (f) {
+						if (!f.querySelector('input[name="csrf_token"]')) {
+							const inp = document.createElement("input");
+							inp.type = "hidden";
+							inp.name = "csrf_token";
+							inp.value = csrfToken;
+							f.appendChild(inp);
+						}
+					});
+				}
+
 				requestAnimationFrame(() => {
 					modal.classList.add("show");
 				});
@@ -193,6 +207,104 @@ document.addEventListener("DOMContentLoaded", function () {
 		openAuthModal();
 		// Clean URL without reload
 		window.history.replaceState({}, "", window.location.pathname);
+	}
+
+	// --- Bookmark Modal ---
+	var bmOpenBtn = document.getElementById("openBookmarks");
+	var bmModal = document.getElementById("bookmarkModal");
+	var bmCloseBtn = document.getElementById("closeBookmarkModal");
+	var bmContent = document.getElementById("bookmarkModalContent");
+
+	if (bmOpenBtn && bmModal) {
+		bmOpenBtn.addEventListener("click", function (e) {
+			e.preventDefault();
+			if (bmContent) {
+				bmContent.innerHTML = "Memuat...";
+				fetch("/bookmark/modal")
+					.then(function (r) { return r.text(); })
+					.then(function (html) { bmContent.innerHTML = html; })
+					.catch(function () { bmContent.innerHTML = "<p style='padding:20px;text-align:center;color:var(--danger)'>Gagal memuat.</p>"; });
+			}
+			bmModal.classList.remove("closing");
+			bmModal.classList.add("show");
+		});
+		bmModal.addEventListener("click", function (e) {
+			if (e.target === bmModal) {
+				bmModal.classList.remove("show");
+				bmModal.classList.add("closing");
+				setTimeout(function () { bmModal.classList.remove("closing"); }, 250);
+			}
+		});
+	}
+	if (bmCloseBtn && bmModal) {
+		bmCloseBtn.addEventListener("click", function () {
+			bmModal.classList.remove("show");
+			bmModal.classList.add("closing");
+			setTimeout(function () { bmModal.classList.remove("closing"); }, 250);
+		});
+	}
+	// Click book in bookmark modal → open detail modal
+	if (bmModal && bmContent) {
+		bmContent.addEventListener("click", function (e) {
+			var link = e.target.closest("a[href^='/buku/']");
+			if (!link) return;
+			e.preventDefault();
+			var slug = link.getAttribute("href").split("/buku/")[1];
+			if (!slug) return;
+			bmModal.classList.remove("show");
+			bmModal.classList.add("closing");
+			setTimeout(function () { bmModal.classList.remove("closing"); }, 250);
+			openBookModal(slug, link);
+		});
+	}
+
+	// --- Riwayat Modal ---
+	var rwOpenBtn = document.getElementById("openRiwayat");
+	var rwModal = document.getElementById("riwayatModal");
+	var rwCloseBtn = document.getElementById("closeRiwayatModal");
+	var rwContent = document.getElementById("riwayatModalContent");
+
+	if (rwOpenBtn && rwModal) {
+		rwOpenBtn.addEventListener("click", function (e) {
+			e.preventDefault();
+			if (rwContent) {
+				rwContent.innerHTML = "Memuat...";
+				fetch("/riwayat/modal")
+					.then(function (r) { return r.text(); })
+					.then(function (html) { rwContent.innerHTML = html; })
+					.catch(function () { rwContent.innerHTML = "<p style='padding:20px;text-align:center;color:var(--danger)'>Gagal memuat.</p>"; });
+			}
+			rwModal.classList.remove("closing");
+			rwModal.classList.add("show");
+		});
+		rwModal.addEventListener("click", function (e) {
+			if (e.target === rwModal) {
+				rwModal.classList.remove("show");
+				rwModal.classList.add("closing");
+				setTimeout(function () { rwModal.classList.remove("closing"); }, 250);
+			}
+		});
+	}
+	if (rwCloseBtn && rwModal) {
+		rwCloseBtn.addEventListener("click", function () {
+			rwModal.classList.remove("show");
+			rwModal.classList.add("closing");
+			setTimeout(function () { rwModal.classList.remove("closing"); }, 250);
+		});
+	}
+	// Click book in riwayat modal → open detail modal
+	if (rwModal && rwContent) {
+		rwContent.addEventListener("click", function (e) {
+			var link = e.target.closest("a[href^='/buku/']");
+			if (!link) return;
+			e.preventDefault();
+			var slug = link.getAttribute("href").split("/buku/")[1];
+			if (!slug) return;
+			rwModal.classList.remove("show");
+			rwModal.classList.add("closing");
+			setTimeout(function () { rwModal.classList.remove("closing"); }, 250);
+			openBookModal(slug, link);
+		});
 	}
 
 	// User dropdown toggle

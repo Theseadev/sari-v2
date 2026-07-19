@@ -1,6 +1,7 @@
 // src/controllers/bookmarks.ts — Bookmarks & Reading History
 
 import type { Context } from "hono";
+import { setCookie } from "hono/cookie";
 import { query, queryOne } from "../config/database";
 import { layout } from "../views/html";
 import { getUser, getFlash, setFlashRedirect, esc } from "../helpers";
@@ -20,13 +21,53 @@ export async function toggle(c: Context) {
 
 	if (existing) {
 		await query("DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?", [user.userId, bookId]);
+		setCookie(c, "flash", JSON.stringify({ type: "info", message: "Bookmark dihapus." }), { httpOnly: true, path: "/", maxAge: 5 });
 	} else {
 		await query("INSERT INTO bookmarks (user_id, book_id) VALUES (?, ?)", [user.userId, bookId]);
+		setCookie(c, "flash", JSON.stringify({ type: "success", message: "Berhasil ditambahkan ke bookmark!" }), { httpOnly: true, path: "/", maxAge: 5 });
 	}
 
 	// Redirect back to referrer or book detail
 	const referer = c.req.header("referer") || "/buku";
 	return c.redirect(referer);
+}
+
+// Modal content for bookmarks (AJAX)
+export async function modal(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.html("<p style='padding:20px;text-align:center;color:var(--text-muted)'>Silakan masuk terlebih dahulu.</p>");
+
+	const books = await query<{ id: number; title: string; slug: string; author: string; cover_image: string | null; access_type: string }[]>(
+		`SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.access_type
+		 FROM bookmarks bm JOIN books b ON b.id = bm.book_id
+		 WHERE bm.user_id = ? AND b.status = 'active'
+		 ORDER BY bm.created_at DESC`,
+		[user.userId],
+	);
+
+	if (books.length === 0) {
+		return c.html(`<div style="text-align:center;padding:40px 20px">
+			<div style="font-size:2.5rem;margin-bottom:12px">🔖</div>
+			<h3 style="font-family:var(--font-heading);margin-bottom:8px;color:var(--text-heading)">Belum ada bookmark</h3>
+			<p style="color:var(--text-muted);font-size:0.88rem">Bookmark buku favorit dari detail buku.</p>
+		</div>`);
+	}
+
+	const cards = books.map((b) => `
+		<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-light)">
+			<div style="width:45px;height:60px;border-radius:6px;overflow:hidden;background:var(--bg-warm);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+				${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="" style="width:100%;height:100%;object-fit:cover">` : `<span style="color:var(--text-dim)">📖</span>`}
+			</div>
+			<div style="flex:1;min-width:0">
+				<div style="font-weight:600;font-size:0.85rem;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="/buku/${esc(b.slug)}" style="color:inherit;text-decoration:none">${esc(b.title)}</a></div>
+				<div style="font-size:0.78rem;color:var(--text-muted);font-style:italic">${esc(b.author)}</div>
+			</div>
+			<form method="POST" action="/bookmark/${b.id}/toggle" style="margin:0;flex-shrink:0">
+				<button type="submit" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.75rem;font-weight:600">Hapus</button>
+			</form>
+		</div>`).join("");
+
+	return c.html(`<div style="max-height:400px;overflow-y:auto">${cards}</div>`);
 }
 
 // List bookmarks (GET /bookmark)
@@ -86,6 +127,42 @@ export async function list(c: Context) {
 		flash,
 	);
 	return c.html(html);
+}
+
+// Reading history modal (AJAX)
+export async function historyModal(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.html("<p style='padding:20px;text-align:center;color:var(--text-muted)'>Silakan masuk terlebih dahulu.</p>");
+
+	const books = await query<{ id: number; title: string; slug: string; author: string; cover_image: string | null; access_type: string; last_page: number; updated_at: string }[]>(
+		`SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.access_type, rh.last_page, rh.last_page, rh.updated_at
+		 FROM reading_history rh JOIN books b ON b.id = rh.book_id
+		 WHERE rh.user_id = ? AND b.status = 'active'
+		 ORDER BY rh.updated_at DESC LIMIT 50`,
+		[user.userId],
+	);
+
+	if (books.length === 0) {
+		return c.html(`<div style="text-align:center;padding:40px 20px">
+			<div style="font-size:2.5rem;margin-bottom:12px">📖</div>
+			<h3 style="font-family:var(--font-heading);margin-bottom:8px;color:var(--text-heading)">Belum ada riwayat</h3>
+			<p style="color:var(--text-muted);font-size:0.88rem">Mulai baca buku dan riwayatmu akan muncul di sini.</p>
+		</div>`);
+	}
+
+	const cards = books.map((b) => `
+		<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-light)">
+			<div style="width:45px;height:60px;border-radius:6px;overflow:hidden;background:var(--bg-warm);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+				${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="" style="width:100%;height:100%;object-fit:cover">` : `<span style="color:var(--text-dim)">📖</span>`}
+			</div>
+			<div style="flex:1;min-width:0">
+				<div style="font-weight:600;font-size:0.85rem;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="/buku/${esc(b.slug)}" style="color:inherit;text-decoration:none">${esc(b.title)}</a></div>
+				<div style="font-size:0.78rem;color:var(--text-muted);font-style:italic">${esc(b.author)}</div>
+				<div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">Hal. ${b.last_page} · ${new Date(b.updated_at).toLocaleDateString("id-ID")}</div>
+			</div>
+		</div>`).join("");
+
+	return c.html(`<div style="max-height:400px;overflow-y:auto">${cards}</div>`);
 }
 
 // Reading history (GET /riwayat)
