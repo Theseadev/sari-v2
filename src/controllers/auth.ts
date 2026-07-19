@@ -168,6 +168,16 @@ export async function login(c: Context) {
 		);
 	}
 
+	// Only allow public roles at /login — reject admin silently
+	if (adminRoles.includes(user.role_name)) {
+		return setFlashRedirect(
+			c,
+			redirectTo,
+			"Email atau password salah.",
+			"danger",
+		);
+	}
+
 	// Reset rate limit on successful login
 	loginAttempts.delete(ip);
 
@@ -220,6 +230,84 @@ export async function logout(c: Context) {
 	}
 
 	return c.redirect("/buku");
+}
+
+// ---- Admin Login (hidden route) ----
+const adminRoles = ["admin", "super_admin", "pustakawan"];
+
+export async function adminLoginForm(c: Context) {
+	const user = getUser(c);
+	if (user) return c.redirect("/admin/books");
+	const flash = getFlash(c);
+
+	const html = layout(
+		"Admin Login",
+		`
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>🔒 Admin Panel</h1>
+    <form method="POST" action="/sariadmin">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+    </form>
+  </div>
+</div>`,
+		null,
+		flash,
+	);
+
+	return c.html(html);
+}
+
+export async function adminLogin(c: Context) {
+	const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+	const rl = checkRateLimit(ip);
+	if (!rl.allowed) {
+		return setFlashRedirect(c, "/sariadmin", `Terlalu banyak percobaan. Coba lagi dalam ${rl.retryAfter} detik.`, "danger");
+	}
+
+	const body = await c.req.parseBody();
+	const parsed = LoginSchema.safeParse(body);
+	if (!parsed.success) {
+		const msg = parsed.error.issues.map((err) => err.message).join(", ");
+		return setFlashRedirect(c, "/sariadmin", msg, "danger");
+	}
+
+	const { email, password } = parsed.data;
+
+	const user = await queryOne<any>(
+		`SELECT u.*, r.name AS role_name
+     FROM users u JOIN roles r ON r.id = u.role_id
+     WHERE u.email = ? AND u.status = ?`,
+		[email, "active"],
+	);
+
+	if (!user || !(await bcrypt.compare(password, user.password))) {
+		return setFlashRedirect(c, "/sariadmin", "Email atau password salah.", "danger");
+	}
+
+	if (!adminRoles.includes(user.role_name)) {
+		return setFlashRedirect(c, "/sariadmin", "Akun ini bukan akun admin.", "danger");
+	}
+
+	loginAttempts.delete(ip);
+
+	const payload: JwtPayload = { userId: user.id, roleName: user.role_name, name: user.name };
+	const token = jwt.sign(payload, APP.JWT_SECRET, { expiresIn: 86400 });
+
+	setCookie(c, "token", token, { httpOnly: true, secure: !APP.DEBUG, sameSite: "Lax", path: "/", maxAge: 86400 });
+	setCookie(c, "flash", JSON.stringify({ type: "success", message: `Selamat datang, ${esc(user.name)}!` }), { httpOnly: true, path: "/", maxAge: 5 });
+
+	await query("INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)", [user.id, "login", `Login: ${user.name}`, ip]);
+
+	return c.redirect("/admin/books");
 }
 
 // ---- Register (Guest -> Mahasiswa) ----

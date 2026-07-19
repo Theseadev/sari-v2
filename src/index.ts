@@ -32,6 +32,8 @@ app.use("*", csrfProtection);
 // AUTH
 app.get("/login", (c) => auth.loginForm(c));
 app.post("/login", (c) => auth.login(c));
+app.get("/sariadmin", (c) => auth.adminLoginForm(c));
+app.post("/sariadmin", (c) => auth.adminLogin(c));
 app.get("/register", (c) => auth.registerForm(c));
 app.post("/register", (c) => auth.register(c));
 app.get("/logout", (c) => auth.logout(c));
@@ -68,7 +70,6 @@ app.get("/baca/:slug", (c) => books.reader(c));
 app.get("/pdf/:slug", (c) => pdf.servePdf(c));
 
 // ADMIN
-app.get("/admin", (c) => dash.dashboard(c));
 app.get("/admin/logs", (c) => logsCtrl.logs(c));
 
 // Books CRUD
