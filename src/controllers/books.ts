@@ -256,6 +256,24 @@ export async function detail(c: Context) {
 		);
 	}
 
+	// Check if bookmarked
+	let isBookmarked = false;
+	if (user) {
+		const bm = await queryOne<{ id: number }>(
+			"SELECT id FROM bookmarks WHERE user_id = ? AND book_id = ?",
+			[user.userId, current.id],
+		);
+		isBookmarked = !!bm;
+	}
+
+	// Record reading history
+	if (user) {
+		await query(
+			"INSERT INTO reading_history (user_id, book_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP",
+			[user.userId, current.id],
+		);
+	}
+
 	// Prev/next slugs - use simpler WHERE without joins
 	const whereSimple =
 		"status = 'active'" +
@@ -329,6 +347,7 @@ export async function detail(c: Context) {
               ${desc}
               <div class="modal-actions">
                 <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
+                ${user ? `<form method="POST" action="/bookmark/${current.id}/toggle" style="margin:0"><button type="submit" class="btn btn-lg ${isBookmarked ? 'btn-danger' : 'btn-outline'}">${isBookmarked ? '✕ Hapus Bookmark' : '🔖 Bookmark'}</button></form>` : ""}
               </div>
             </div>
           </div>

@@ -1,0 +1,28 @@
+{
+  "runId": "c149841f-c8fa-4f6c-a621-af2a0a9cb16f",
+  "agent": "worker",
+  "task": "[Read from: C:\\laragon\\www\\sari-v2\\context.md, C:\\laragon\\www\\sari-v2\\plan.md]\n\nYou are implementing features for a Hono.js + MySQL library app at C:/laragon/www/sari-v2. Your task: Create a database migration file at C:/laragon/www/sari-v2/database/migration_v3.sql that adds these tables to the sari_v2 database:\n\n1. password_resets — for forgot password flow:\n- id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY\n- user_id INT UNSIGNED NOT NULL (FK to users.id)\n- token VARCHAR(64) NOT NULL UNIQUE\n- expires_at DATETIME NOT NULL\n- used TINYINT(1) DEFAULT 0\n- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n- INDEX on user_id and token\n\n2. bookmarks — users can save/bookmark books:\n- id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY\n- user_id INT UNSIGNED NOT NULL (FK to users.id)\n- book_id INT UNSIGNED NOT NULL (FK to books.id)\n- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n- UNIQUE KEY on (user_id, book_id)\n- INDEX on user_id and book_id\n\n3. reading_history — track which books a user has opened:\n- id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY\n- user_id INT UNSIGNED NOT NULL (FK to users.id)\n- book_id INT UNSIGNED NOT NULL (FK to books.id)\n- last_page INT UNSIGNED DEFAULT 0\n- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n- updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n- UNIQUE KEY on (user_id, book_id)\n- INDEX on user_id\n\nUse ENGINE=InnoDB, charset utf8mb4_unicode_ci. Include USE sari_v2; at the top. Write the file directly.\n\n---\nUpdate progress at: C:\\laragon\\www\\sari-v2\\.pi-subagents\\artifacts\\progress\\c149841f-c8fa-4f6c-a621-af2a0a9cb16f\\progress.md\n\n## Acceptance Contract\nAcceptance level: reviewed\nCompletion is not accepted from prose alone. End with a structured acceptance report.\n\nCriteria:\n- criterion-1: Implement the requested change without widening scope\n- criterion-2: Return evidence sufficient for an independent acceptance review\n\nRequired evidence: changed-files, tests-added, commands-run, validation-output, residual-risks, no-staged-files\n\nReview gate: required by reviewer.\n\nFinish with a fenced JSON block tagged `acceptance-report` in this shape:\nUse empty arrays when no items apply; array fields contain strings unless object entries are shown.\n```acceptance-report\n{\n  \"criteriaSatisfied\": [\n    {\n      \"id\": \"criterion-1\",\n      \"status\": \"satisfied\",\n      \"evidence\": \"specific proof\"\n    }\n  ],\n  \"changedFiles\": [\n    \"src/file.ts\"\n  ],\n  \"testsAddedOrUpdated\": [\n    \"test/file.test.ts\"\n  ],\n  \"commandsRun\": [\n    {\n      \"command\": \"command\",\n      \"result\": \"passed\",\n      \"summary\": \"short result\"\n    }\n  ],\n  \"validationOutput\": [\n    \"validation output or concise summary\"\n  ],\n  \"residualRisks\": [\n    \"none\"\n  ],\n  \"noStagedFiles\": true,\n  \"diffSummary\": \"short description of the diff\",\n  \"reviewFindings\": [\n    \"blocker: file.ts:12 - issue found, or no blockers\"\n  ],\n  \"manualNotes\": \"anything else the parent should know\"\n}\n```",
+  "exitCode": 0,
+  "model": "bansos/big-pickle:high",
+  "attemptedModels": [
+    "bansos/big-pickle:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "bansos/big-pickle:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 11338,
+        "output": 2462,
+        "cacheRead": 91136,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 12
+      }
+    }
+  ],
+  "transcriptPath": "C:\\laragon\\www\\sari-v2\\.pi-subagents\\artifacts\\c149841f-c8fa-4f6c-a621-af2a0a9cb16f_worker_0_transcript.jsonl",
+  "skills": [],
+  "timestamp": 1784440683192
+}

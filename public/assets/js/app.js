@@ -195,6 +195,20 @@ document.addEventListener("DOMContentLoaded", function () {
 		window.history.replaceState({}, "", window.location.pathname);
 	}
 
+	// User dropdown toggle
+	document.querySelectorAll(".user-dropdown-trigger").forEach(function (trigger) {
+		trigger.addEventListener("click", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			trigger.closest(".user-dropdown-wrap").classList.toggle("open");
+		});
+	});
+	document.addEventListener("click", function () {
+		document.querySelectorAll(".user-dropdown-wrap.open").forEach(function (w) {
+			w.classList.remove("open");
+		});
+	});
+
 	// Custom dropdowns
 	document.querySelectorAll(".dd-wrap").forEach(function (wrap) {
 		var trigger = wrap.querySelector(".dd-trigger");

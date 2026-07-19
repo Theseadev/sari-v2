@@ -14,6 +14,10 @@ import * as booksCrud from "./controllers/admin/books";
 import * as usersCrud from "./controllers/admin/users";
 import * as facsCrud from "./controllers/admin/faculties";
 import * as progsCrud from "./controllers/admin/programs";
+import * as catsCrud from "./controllers/admin/categories";
+import * as password from "./controllers/password";
+import * as profile from "./controllers/profile";
+import * as bookmarks from "./controllers/bookmarks";
 import { csrfProtection } from "./middleware/csrf";
 
 const app = new Hono();
@@ -31,6 +35,22 @@ app.post("/login", (c) => auth.login(c));
 app.get("/register", (c) => auth.registerForm(c));
 app.post("/register", (c) => auth.register(c));
 app.get("/logout", (c) => auth.logout(c));
+
+// Password Reset
+app.get("/lupa-password", (c) => password.forgotForm(c));
+app.post("/lupa-password", (c) => password.forgot(c));
+app.get("/reset-password", (c) => password.resetForm(c));
+app.post("/reset-password", (c) => password.reset(c));
+
+// Profile
+app.get("/profil", (c) => profile.profile(c));
+app.get("/profil/ganti-password", (c) => profile.changePasswordForm(c));
+app.post("/profil/ganti-password", (c) => profile.changePassword(c));
+
+// Bookmarks
+app.get("/bookmark", (c) => bookmarks.list(c));
+app.post("/bookmark/:id/toggle", (c) => bookmarks.toggle(c));
+app.get("/riwayat", (c) => bookmarks.history(c));
 
 // Sitemap
 app.get("/sitemap.xml", (c) => auth.sitemap(c));
@@ -80,6 +100,14 @@ app.post("/admin/programs/create", (c) => progsCrud.store(c));
 app.get("/admin/programs/:id/edit", (c) => progsCrud.editForm(c));
 app.post("/admin/programs/:id/update", (c) => progsCrud.update(c));
 app.post("/admin/programs/:id/delete", (c) => progsCrud.remove(c));
+
+// Categories CRUD
+app.get("/admin/categories", (c) => catsCrud.list(c));
+app.get("/admin/categories/create", (c) => catsCrud.createForm(c));
+app.post("/admin/categories/create", (c) => catsCrud.store(c));
+app.get("/admin/categories/:id/edit", (c) => catsCrud.editForm(c));
+app.post("/admin/categories/:id/update", (c) => catsCrud.update(c));
+app.post("/admin/categories/:id/delete", (c) => catsCrud.remove(c));
 
 // 404
 app.notFound((c) =>

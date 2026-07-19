@@ -13,9 +13,16 @@ export function layout(
 ): string {
 	const navRight = user
 		? `
-    <li><span class="badge ${user.roleName}">${esc(user.name)}</span></li>
-    ${["admin", "super_admin", "pustakawan"].includes(user.roleName) ? '<li><a href="/admin">Dashboard</a></li>' : ""}
-    <li><a href="/logout">Logout</a></li>`
+    <li class="user-dropdown-wrap">
+      <a href="#" class="badge ${user.roleName} user-dropdown-trigger">${esc(user.name)} <span style="font-size:0.6rem;margin-left:2px">▾</span></a>
+      <div class="user-dropdown">
+        <a href="/profil">Profil</a>
+        <a href="/bookmark">Bookmark</a>
+        <a href="/riwayat">Riwayat</a>
+        ${["admin", "super_admin", "pustakawan"].includes(user.roleName) ? '<a href="/admin">Dashboard</a>' : ""}
+        <a href="/logout" class="dd-logout">Logout</a>
+      </div>
+    </li>`
 		: `<li><a href="#" id="openAuth">Masuk / Daftar</a></li>`;
 
 	const flashHtml = flash?.message
@@ -95,6 +102,7 @@ ${
           <input type="hidden" name="redirect" value="/buku">
           <button type="submit" class="btn btn-primary btn-block">Masuk</button>
         </form>
+        <p class="text-center mt-2 text-muted"><a href="/lupa-password">Lupa Password?</a></p>
         <p class="text-center mt-2 text-muted"><a href="/buku">Jelajahi Katalog Publik →</a></p>
       </div>
       <div class="auth-panel" id="panel-register">
