@@ -19,7 +19,7 @@ export function layout(
         <a href="#" id="openProfil">Profil</a>
         <a href="#" id="openBookmarks">Bookmark</a>
         <a href="#" id="openRiwayat">Riwayat</a>
-        <a href="/profil/ganti-password" style="color:var(--primary)">Ganti Password</a>
+        ${user.roleName === "tamu" ? '<a href="#" id="openPassword">Ganti Password</a>' : ""}
         <a href="/logout" class="dd-logout">Logout</a>
       </div>
     </li>`
@@ -185,6 +185,14 @@ ${
     <button class="modal-close" id="closeProfilModal">&times;</button>
     <h2 style="font-family:var(--font-heading);margin-bottom:16px">👤 Profil Saya</h2>
     <div id="profilModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
+  </div>
+</div>
+
+<div id="passwordModal" class="modal-overlay">
+  <div class="modal-card modal-sm">
+    <button class="modal-close" id="closePasswordModal">&times;</button>
+    <h2 style="font-family:var(--font-heading);margin-bottom:16px">🔒 Ganti Password</h2>
+    <div id="passwordModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
   </div>
 </div>
 

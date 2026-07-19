@@ -1798,6 +1798,13 @@ a.qa-card:hover {
 	max-width: 520px;
 	padding: 28px 24px;
 }
+
+/* Profile modal card */
+#profilModal .modal-card {
+	max-width: 420px;
+	padding: 28px 24px;
+}
+
 .book-modal-grid {
 	display: grid;
 	grid-template-columns: 260px 1fr;

@@ -1,6 +1,7 @@
 // src/controllers/profile.ts — User profile & change password
 
 import type { Context } from "hono";
+import { setCookie, deleteCookie } from "hono/cookie";
 import bcrypt from "bcryptjs";
 import { query, queryOne } from "../config/database";
 import { layout } from "../views/html";
@@ -89,6 +90,30 @@ export async function profile(c: Context) {
 	return c.html(html);
 }
 
+export async function changePasswordModal(c: Context) {
+	const user = getUser(c);
+	if (!user) return c.html("<p style='padding:20px;text-align:center;color:var(--text-muted)'>Silakan masuk terlebih dahulu.</p>");
+
+	return c.html(`
+    <form id="changePasswordForm" method="POST" action="/profil/ganti-password">
+      <input type="hidden" name="from_modal" value="1">
+      <div class="form-group">
+        <label for="cp_current">Password Saat Ini</label>
+        <input type="password" id="cp_current" name="current_password" class="form-control" required autocomplete="current-password">
+      </div>
+      <div class="form-group">
+        <label for="cp_new">Password Baru</label>
+        <input type="password" id="cp_new" name="new_password" class="form-control" required minlength="6" autocomplete="new-password" placeholder="Minimal 6 karakter">
+      </div>
+      <div class="form-group">
+        <label for="cp_confirm">Konfirmasi Password Baru</label>
+        <input type="password" id="cp_confirm" name="confirm_password" class="form-control" required autocomplete="new-password" placeholder="Ulangi password baru">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Simpan Perubahan</button>
+    </form>
+  `);
+}
+
 export async function changePasswordForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
@@ -131,10 +156,12 @@ export async function changePassword(c: Context) {
 	const current = String(body.current_password || "");
 	const newPass = String(body.new_password || "");
 	const confirm = String(body.confirm_password || "");
+	const fromModal = body.from_modal === "1";
+	const redirect = fromModal ? "/" : "/profil/ganti-password";
 
-	if (!current) return setFlashRedirect(c, "/profil/ganti-password", "Password saat ini wajib diisi.", "danger");
-	if (newPass.length < 6) return setFlashRedirect(c, "/profil/ganti-password", "Password baru minimal 6 karakter.", "danger");
-	if (newPass !== confirm) return setFlashRedirect(c, "/profil/ganti-password", "Password baru dan konfirmasi tidak cocok.", "danger");
+	if (!current) return setFlashRedirect(c, redirect, "Password saat ini wajib diisi.", "danger");
+	if (newPass.length < 6) return setFlashRedirect(c, redirect, "Password baru minimal 6 karakter.", "danger");
+	if (newPass !== confirm) return setFlashRedirect(c, redirect, "Password baru dan konfirmasi tidak cocok.", "danger");
 
 	const dbUser = await queryOne<{ password: string }>(
 		"SELECT password FROM users WHERE id = ?",
@@ -142,11 +169,19 @@ export async function changePassword(c: Context) {
 	);
 
 	if (!dbUser || !(await bcrypt.compare(current, dbUser.password))) {
-		return setFlashRedirect(c, "/profil/ganti-password", "Password saat ini salah.", "danger");
+		return setFlashRedirect(c, redirect, "Password saat ini salah.", "danger");
 	}
 
 	const hash = await bcrypt.hash(newPass, 10);
 	await query("UPDATE users SET password = ? WHERE id = ?", [hash, user.userId]);
 
-	return setFlashRedirect(c, "/profil", "Password berhasil diubah!", "success");
+	// Logout after password change
+	deleteCookie(c, "token", { path: "/" });
+	setCookie(c, "flash", JSON.stringify({ type: "success", message: "Password berhasil diubah! Silakan masuk kembali." }), {
+		httpOnly: true,
+		path: "/",
+		maxAge: 5,
+	});
+
+	return c.redirect("/?auth=login");
 }

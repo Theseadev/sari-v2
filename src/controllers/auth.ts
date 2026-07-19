@@ -253,10 +253,10 @@ export async function register(c: Context) {
 		return setFlashRedirect(c, "/register", "Email sudah terdaftar.", "danger");
 	}
 
-	// Get 'mahasiswa' role ID
+	// Get 'tamu' role ID
 	const role = await queryOne<{ id: number }>(
 		"SELECT id FROM roles WHERE name = ?",
-		["mahasiswa"],
+		["tamu"],
 	);
 	if (!role) {
 		return setFlashRedirect(
@@ -282,7 +282,7 @@ export async function register(c: Context) {
 	// Auto-login: create token and redirect
 	const payload: JwtPayload = {
 		userId: newUser!.id,
-		roleName: "mahasiswa",
+		roleName: "tamu",
 		name: name,
 	};
 	const token = jwt.sign(payload, APP.JWT_SECRET, { expiresIn: 86400 });

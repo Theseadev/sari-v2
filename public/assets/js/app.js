@@ -342,6 +342,56 @@ document.addEventListener("DOMContentLoaded", function () {
 		});
 	}
 
+	// --- Password Modal ---
+	var pwOpenBtn = document.getElementById("openPassword");
+	var pwModal = document.getElementById("passwordModal");
+	var pwCloseBtn = document.getElementById("closePasswordModal");
+	var pwContent = document.getElementById("passwordModalContent");
+
+	if (pwOpenBtn && pwModal) {
+		pwOpenBtn.addEventListener("click", function (e) {
+			e.preventDefault();
+			if (pwContent) {
+				pwContent.innerHTML = "Memuat...";
+				fetch("/profil/ganti-password/modal")
+					.then(function (r) { return r.text(); })
+					.then(function (html) {
+					pwContent.innerHTML = html;
+					// Inject CSRF token
+					var token = document.querySelector('meta[name="csrf-token"]')?.content;
+					if (token) {
+						pwContent.querySelectorAll('form').forEach(function (f) {
+							if (!f.querySelector('input[name="csrf_token"]')) {
+								var inp = document.createElement('input');
+								inp.type = 'hidden';
+								inp.name = 'csrf_token';
+								inp.value = token;
+								f.appendChild(inp);
+							}
+						});
+					}
+				})
+					.catch(function () { pwContent.innerHTML = "<p style='padding:20px;text-align:center;color:var(--danger)'>Gagal memuat.</p>"; });
+			}
+			pwModal.classList.remove("closing");
+			pwModal.classList.add("show");
+		});
+		pwModal.addEventListener("click", function (e) {
+			if (e.target === pwModal) {
+				pwModal.classList.remove("show");
+				pwModal.classList.add("closing");
+				setTimeout(function () { pwModal.classList.remove("closing"); }, 250);
+			}
+		});
+	}
+	if (pwCloseBtn && pwModal) {
+		pwCloseBtn.addEventListener("click", function () {
+			pwModal.classList.remove("show");
+			pwModal.classList.add("closing");
+			setTimeout(function () { pwModal.classList.remove("closing"); }, 250);
+		});
+	}
+
 	// SweetAlert2 delete confirm
 	document.body.addEventListener("click", function (e) {
 		var btn = e.target.closest("button[onclick]", "form[onsubmit]");
