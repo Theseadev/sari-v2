@@ -11,6 +11,7 @@ import { getUser, getFlash } from "../helpers";
 export async function dashboard(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const flash = getFlash(c);
 
 	const [bookCount] = await query<any[]>("SELECT COUNT(*) AS c FROM books");

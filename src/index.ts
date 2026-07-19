@@ -37,8 +37,7 @@ app.post("/register", (c) => auth.register(c));
 app.get("/logout", (c) => auth.logout(c));
 
 // Password Reset
-app.get("/lupa-password", (c) => password.forgotForm(c));
-app.post("/lupa-password", (c) => password.forgot(c));
+
 app.get("/reset-password", (c) => password.resetForm(c));
 app.post("/reset-password", (c) => password.reset(c));
 
@@ -111,6 +110,15 @@ app.post("/admin/categories/create", (c) => catsCrud.store(c));
 app.get("/admin/categories/:id/edit", (c) => catsCrud.editForm(c));
 app.post("/admin/categories/:id/update", (c) => catsCrud.update(c));
 app.post("/admin/categories/:id/delete", (c) => catsCrud.remove(c));
+
+// Error handler
+app.onError((err, c) => {
+	console.error(`[ERROR] ${c.req.method} ${c.req.path}:`, err.message);
+	return c.html(
+		errorPage(500, "Internal Server Error", err.message),
+		500,
+	);
+});
 
 // 404
 app.notFound((c) =>

@@ -12,6 +12,7 @@ import { getFlash, setFlash } from "../flash";
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const flash = getFlash(c);
 	const users = await query<any[]>(
 		`SELECT u.id, u.username, u.name, u.email, u.nim_nip, u.status,

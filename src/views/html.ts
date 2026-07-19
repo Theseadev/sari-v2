@@ -102,7 +102,7 @@ ${
           <input type="hidden" name="redirect" value="/buku">
           <button type="submit" class="btn btn-primary btn-block">Masuk</button>
         </form>
-        <p class="text-center mt-2 text-muted"><a href="/lupa-password">Lupa Password?</a></p>
+
         <p class="text-center mt-2 text-muted"><a href="/buku">Jelajahi Katalog Publik →</a></p>
       </div>
       <div class="auth-panel" id="panel-register">

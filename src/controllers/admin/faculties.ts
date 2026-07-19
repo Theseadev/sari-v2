@@ -11,6 +11,7 @@ import { getFlash, setFlash } from "../flash";
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/admin");
 	const flash = getFlash(c);
 	const facs = await query<any[]>(
 		`SELECT f.*, (SELECT COUNT(*) FROM programs p WHERE p.faculty_id = f.id) AS program_count

@@ -14,6 +14,7 @@ import { getFlash, setFlash } from "../flash";
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const flash = getFlash(c);
 	const books = await query<any[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type, b.cover_image,
@@ -32,6 +33,7 @@ export async function list(c: Context) {
 export async function createForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const progs = await query<
 		{ id: number; name: string; faculty_name: string }[]
 	>(
@@ -46,6 +48,7 @@ export async function createForm(c: Context) {
 export async function store(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const body = await c.req.parseBody();
 
 	const title = String(body.title || "").trim();
@@ -130,6 +133,7 @@ export async function store(c: Context) {
 export async function editForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const book = await queryOne<any>("SELECT * FROM books WHERE id = ?", [id]);
 	if (!book) {
@@ -152,6 +156,7 @@ export async function editForm(c: Context) {
 export async function update(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const body = await c.req.parseBody();
 
@@ -224,6 +229,7 @@ export async function update(c: Context) {
 export async function remove(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const book = await queryOne<any>("SELECT * FROM books WHERE id = ?", [id]);
 	if (!book) {

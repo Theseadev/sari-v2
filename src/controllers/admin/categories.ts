@@ -11,6 +11,7 @@ import { getFlash, setFlash } from "../flash";
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/admin");
 	const flash = getFlash(c);
 	const cats = await query<any[]>(
 		`SELECT c.*, (SELECT COUNT(*) FROM books b WHERE b.category_id = c.id) AS book_count

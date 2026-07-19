@@ -29,14 +29,14 @@ export function bookList(
 	} else {
 		for (const b of books) {
 			const cover = b.cover_image
-				? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="" style="width:36px;height:48px;object-fit:cover;border-radius:4px">`
-				: "—";
+				? `<div style="width:48px;height:64px;border-radius:6px;overflow:hidden;background:var(--bg-warm);flex-shrink:0"><img src="/uploads/covers/${esc(b.cover_image)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`
+				: `<div style="width:48px;height:64px;border-radius:6px;background:var(--bg-warm);display:flex;align-items:center;justify-content:center;color:var(--text-dim);flex-shrink:0">📖</div>`;
 			rows += `<tr>
         <td>${cover}</td>
         <td><strong>${esc(b.title)}</strong><br><small class="text-muted">${esc(b.author)}</small></td>
         <td><span class="badge-sm ${b.access_type}">${b.access_type === "internal" ? "Internal" : "Publik"}</span></td>
         <td>${b.views}</td>
-        <td><small>${b.created_at?.slice(0, 10) ?? ""}</small></td>
+        <td><small>${new Date(b.created_at).toLocaleDateString("id-ID")}</small></td>
         <td class="nowrap">
           <a href="/admin/books/${b.id}/edit" class="btn-sm">Edit</a>
           <form method="POST" action="/admin/books/${b.id}/delete" style="display:inline">
