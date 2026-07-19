@@ -1,0 +1,16 @@
+-- Seed 5 sample books with valid foreign keys
+-- Categories: 3=Disertasi, 4=Buku Ajar, 5=Referensi Umum, 6=Jurnal
+-- Faculties: 1=Kesehatan, 2=Humaniora, 3=Sains dan Teknologi
+-- Programs: 1=Kebidanan, 2=Keperawatan, 3=Farmasi, 9=Sistem Informasi
+-- Users: 1=Super Admin
+
+INSERT INTO `books` (`title`, `slug`, `author`, `description`, `publisher`, `publication_year`, `isbn`, `page_count`, `category_id`, `program_id`, `access_type`, `cover_image`, `file_path`, `views`, `file_size`, `status`, `uploaded_by`) VALUES
+('Asuhan Kebidanan pada Ibu Hamil Patologi', 'asuhan-kebidanan-ibu-hamil-patologi', 'Dr. Siti Rahayu, M.Keb', 'Buku ajar lengkap mengenai asuhan kebidanan komprehensif pada ibu hamil dengan patologi (hipertensi, diabetes, anemia, infeksi). Mencakup assessment, diagnosis, perencanaan, implementasi, dan evaluasi berbasis bukti terkini. Dilengkapi studi kasus dan soal latihan.', 'Penerbit Buku Kedokteran EGC', 2023, '978-623-7123-45-6', 312, 4, 1, 'internal', 'covers/asuhan-kebidanan-cover.jpg', 'books/asuhan-kebidanan-ibu-hamil.pdf', 1247, 8420000, 'active', 1),
+
+('Dasar-Dasar Keperawatan Medikal Bedah', 'dasar-keperawatan-medikal-bedah', 'Nursalam, S.Kp., M.Kes., Ph.D.', 'Referensi standar keperawatan medikal bedah untuk mahasiswa dan praktisi. Membahas konsep dasar, assessment pre-operatif, perawatan intra-operatif, post-operatif, serta manajemen komplikasi. Disertai ilustrasi prosedur dan tabel obat.', 'Salemba Medika', 2022, '978-623-8912-33-1', 428, 4, 2, 'public', 'covers/keperawatan-medbed-cover.jpg', 'books/keperawatan-medikal-bedah.pdf', 3891, 12560000, 'active', 1),
+
+('Farmakologi Klinis untuk Praktisi Kesehatan', 'farmakologi-klinis-praktisi-kesehatan', 'Prof. Dr. apt. Andi Wijaya, M.Si.', 'Buku referensi farmakologi klinis dengan pendekatan evidence-based. Mencakup farmakokinetik, farmakodinamik, interaksi obat, efek samping, dan pedoman pemakaian khusus (ibu hamil, lansia, gagal ginjal/hepatik). Dilengkapi monograf 200 obat essential.', 'CV. Trans Info Media', 2024, '978-623-9011-77-4', 580, 5, 3, 'internal', 'covers/farmakologi-klinis-cover.jpg', 'books/farmakologi-klinis.pdf', 2156, 15800000, 'active', 1),
+
+('Pemrograman Web Modern dengan Laravel dan Vue.js', 'pemrograman-web-laravel-vuejs', 'Rizki Pratama, S.Kom., M.Cs.', 'Panduan praktis membangun aplikasi full-stack modern menggunakan Laravel 11 (backend API) dan Vue 3 (frontend SPA). Mencakup: REST API, Sanctum authentication, Inertia.js, Tailwind CSS, testing (Pest), deployment (Docker, CI/CD). Cocok untuk mahasiswa Sistem Informasi.', 'Andi Publisher', 2024, '978-623-4567-89-2', 356, 4, 9, 'public', 'covers/laravel-vue-cover.jpg', 'books/laravel-vue-modern.pdf', 5432, 9200000, 'active', 1),
+
+('Jurnal Ilmu Kesehatan Vol. 12 No. 1', 'jurnal-ilmu-kesehatan-vol12-no1', 'Tim Editor JIK', 'Edisi khusus: Inovasi Teknologi Kesehatan. Artikel: (1) Telemedicine di Era Pasca-Pandemi, (2) AI untuk Deteksi Dini Kanker Serviks, (3) Aplikasi Mobile Monitoring Ibu Hamil, (4) Robotika Rehabilitasi Stroke, (5) Big Data Analisis Epidemiologi DBD. Peer-reviewed, terindeks SINTA 2.', 'LPPM Universitas Sari Mulia', 2024, 'ISSN 2541-7890', 144, 6, 1, 'public', 'covers/jik-vol12-cover.jpg', 'journals/jik-vol12-no1.pdf', 892, 4500000, 'active', 1);
