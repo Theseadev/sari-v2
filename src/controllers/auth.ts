@@ -8,7 +8,7 @@ import { z } from "zod";
 import { APP } from "../config/app";
 import { query, queryOne } from "../config/database";
 import type { JwtPayload } from "../types";
-import { layout } from "../views/html";
+import { layout, csrfToken } from "../views/html";
 import { getUser, getFlash, setFlashRedirect, esc } from "../helpers";
 
 // ---- Rate limiting (in-memory, ponytail: simple & works for single-instance) ----
@@ -63,6 +63,7 @@ export async function loginForm(c: Context) {
   <div class="auth-card">
     <h1>Masuk Perpustakaan Digital</h1>
     <form method="POST" action="/login">
+      <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
       <div class="form-group">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" class="form-control" required autocomplete="email"
@@ -97,6 +98,7 @@ export async function registerForm(c: Context) {
   <div class="auth-card">
     <h1>Daftar Akun</h1>
     <form method="POST" action="/register">
+      <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
       <div class="form-row-2">
         <div class="form-group">
           <label for="name">Nama Lengkap</label>

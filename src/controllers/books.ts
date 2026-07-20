@@ -586,10 +586,6 @@ body{background:#2a2d32;font-family:Nunito,sans-serif;overflow:hidden;height:100
   </div>
 </div>
 <script>
-document.addEventListener("contextmenu",e=>e.preventDefault());
-document.addEventListener("keydown",e=>{
-  if((e.ctrlKey&&(e.key==="s"||e.key==="p"))||e.key==="F12")e.preventDefault();
-});
 const URL="/pdf/${esc(book.slug)}";
 const BOOK_ID=${book.id};
 let PDF=null,page=1,TOTAL=0;

@@ -1,25 +1,33 @@
 // public/assets/js/app.js - SARI v2
 console.log("[app.js] loaded");
 
-// ── Anti-Inspection ──
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', function(e) {
-	if (e.key === 'F12') { e.preventDefault(); return false; }
-	if (e.ctrlKey && e.shiftKey && 'IiJjCc'.includes(e.key)) { e.preventDefault(); return false; }
-	if (e.ctrlKey && 'UuSs'.includes(e.key)) { e.preventDefault(); return false; }
-});
+// Apply theme immediately (before DOM ready)
+(function () {
+	var t = localStorage.getItem("theme") || "light";
+	if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+})();
 
-// Force re-add if removed
-const _origAdd = EventTarget.prototype.addEventListener;
-const _protected = new Set(['contextmenu']);
-
-
+// DOMContentLoaded handler starts below
 document.addEventListener("DOMContentLoaded", function () {
 	// Restore scroll position after form submit (faculty/prodi filter)
 	const savedScroll = sessionStorage.getItem("scrollY");
 	if (savedScroll !== null) {
 		window.scrollTo(0, parseInt(savedScroll, 10));
 		sessionStorage.removeItem("scrollY");
+	}
+
+	// Theme toggle
+	const savedTheme = document.documentElement.getAttribute("data-theme") || "light";
+	const themeBtn = document.getElementById("themeToggle");
+	if (themeBtn) {
+		themeBtn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+		themeBtn.addEventListener("click", function () {
+			const current = document.documentElement.getAttribute("data-theme");
+			const next = current === "dark" ? "light" : "dark";
+			document.documentElement.setAttribute("data-theme", next);
+			localStorage.setItem("theme", next);
+			themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
+		});
 	}
 
 	// SweetAlert2 flash messages

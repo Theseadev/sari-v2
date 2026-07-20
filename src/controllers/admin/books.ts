@@ -12,21 +12,35 @@ import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 
 // ── List ──
+const perPage = 5;
+
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
 	const flash = getFlash(c);
+	const page = Math.max(1, Number(c.req.query("page")) || 1);
+
+	const total = await queryOne<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM books");
+	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+
+	const offset = (page - 1) * perPage;
 	const books = await query<any[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type, b.cover_image,
           b.page_count, b.views, b.created_at,
           pr.name AS program_name
    FROM books b
    LEFT JOIN programs pr ON pr.id = b.program_id
-   ORDER BY b.created_at DESC`,
+   ORDER BY b.created_at DESC
+   LIMIT ${perPage} OFFSET ${offset}`,
 	);
 	return c.html(
-		bookList(books, { name: user.name, roleName: user.roleName }, "books"),
+		bookList(
+			books,
+			{ name: user.name, roleName: user.roleName },
+			"books",
+			{ page, totalPages, total: total?.cnt || 0 },
+		),
 	);
 }
 

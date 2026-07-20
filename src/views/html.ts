@@ -67,6 +67,7 @@ export function layout(
     </div>
     <ul class="header-menu">
       <li><a href="/buku">Katalog</a></li>
+      <li><button type="button" class="theme-toggle" id="themeToggle" title="Ganti tema">🌙</button></li>
       ${navRight}
     </ul>
   </div>
