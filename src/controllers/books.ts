@@ -86,10 +86,7 @@ export async function catalog(c: Context) {
 				b.access_type === "internal"
 					? '<span class="access-badge internal">INTERNAL</span>'
 					: '<span class="access-badge public">PUBLIC</span>';
-			const viewsBadge =
-				'<span class="views-badge"><span class="view-icon">👁</span>' +
-				b.views +
-				"</span>";
+
 			const prodi = b.program_name
 				? "<span>" + esc(b.program_name) + "</span>"
 				: "";
@@ -98,14 +95,13 @@ export async function catalog(c: Context) {
           <div class="cover-wrap">
             ${cover}
             ${badge}
-            ${viewsBadge}
           </div>
           <div class="info">
             <h3>${esc(b.title)}</h3>
             <p class="author">${esc(b.author)}</p>
             <div class="meta">
               ${prodi ? `<span class="meta-badge">${prodi}</span>` : ""}
-              <span class="meta-stat"><span class="stat-icon">📄</span>${b.page_count} hlm</span>
+              <span class="meta-stat"><span class="stat-icon">📄</span>${b.page_count} hlm · 👁 ${b.views}</span>
             </div>
           </div>
         </div>`;
@@ -221,7 +217,7 @@ export async function detail(c: Context) {
 		`SELECT b.id, b.slug, b.title, b.author, b.access_type,
 	            b.cover_image, b.page_count, b.views,
 	            b.publisher, b.publication_year, b.isbn, b.description,
-	            b.created_at,
+	            b.program_id, b.created_at,
 	            pr.name AS program_name, f.name AS faculty_name
 	     FROM books b
 	     LEFT JOIN programs pr ON pr.id = b.program_id
@@ -254,6 +250,16 @@ export async function detail(c: Context) {
 			),
 			403,
 		);
+	}
+
+	// Check last page (for resume reading)
+	let lastPage = 0;
+	if (user) {
+		const rh = await queryOne<{ last_page: number }>(
+			"SELECT last_page FROM reading_history WHERE user_id = ? AND book_id = ?",
+			[user.userId, current.id],
+		);
+		if (rh && rh.last_page > 0) lastPage = rh.last_page;
 	}
 
 	// Check if bookmarked
@@ -340,14 +346,14 @@ export async function detail(c: Context) {
                 ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
                 ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
                 ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
-                ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
+                <span><strong>Halaman</strong><br>${current.page_count || "—"}  ·  <strong>Dilihat</strong><br>${current.views}x</span>
                 <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
-                <span><strong>Dilihat</strong><br>${current.views}x</span>
               </div>
               ${desc}
               <div class="modal-actions">
                 <a href="/baca/${esc(current.slug)}" class="btn btn-primary btn-lg">Baca Online</a>
-                ${user ? `<form method="POST" action="/bookmark/${current.id}/toggle" style="margin:0"><button type="submit" class="btn btn-lg ${isBookmarked ? 'btn-danger' : 'btn-outline'}">${isBookmarked ? '✕ Hapus Bookmark' : '🔖 Bookmark'}</button></form>` : ""}
+                ${lastPage > 0 ? `<a href="/baca/${esc(current.slug)}#page=${lastPage}" class="btn btn-outline btn-lg">📖 Lanjut ke hal.${lastPage}</a>` : ""}
+                ${user ? `<form method="POST" action="/bookmark/${current.id}/toggle" style="margin:0"><button type="submit" class="btn btn-lg ${isBookmarked ? "btn-danger" : "btn-outline"}">${isBookmarked ? "✕ Hapus Bookmark" : "🔖 Bookmark"}</button></form>` : ""}
               </div>
             </div>
           </div>
@@ -449,9 +455,8 @@ export async function detailPage(c: Context) {
 	        ${current.publisher ? `<span><strong>Penerbit</strong><br>${esc(current.publisher)}</span>` : ""}
 	        ${current.publication_year ? `<span><strong>Tahun</strong><br>${current.publication_year}</span>` : ""}
 	        ${current.isbn ? `<span><strong>ISBN</strong><br>${esc(current.isbn)}</span>` : ""}
-	        ${current.page_count ? `<span><strong>Halaman</strong><br>${current.page_count}</span>` : ""}
+	        <span><strong>Halaman</strong><br>${current.page_count || "—"}  ·  <strong>Dilihat</strong><br>${current.views}x</span>
 	        <span><strong>Akses</strong><br>${current.access_type === "internal" ? "Internal Kampus" : "Publik"}</span>
-	        <span><strong>Dilihat</strong><br>${current.views}x</span>
 	      </div>
 	      ${desc}
 	      <div class="modal-actions" style="justify-content:center">
@@ -466,7 +471,7 @@ export async function detailPage(c: Context) {
 	);
 }
 
-// ── Flip-Book Reader (cepat) ──
+// ── HTML5 Flip Book Reader ──
 export async function reader(c: Context) {
 	const user = getUser(c);
 	const slug = c.req.param("slug");
@@ -510,41 +515,68 @@ export async function reader(c: Context) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
+:root{--bg-page:#f5f0e8;--shadow:rgba(0,0,0,.35)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#2a2d32;font-family:Nunito,sans-serif;overflow:hidden;height:100dvh}
-#toolbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(30,32,34,.95);padding:0 16px;display:flex;align-items:center;gap:10px;color:#fff;font-size:13px;user-select:none;height:44px;backdrop-filter:blur(6px)}
-#toolbar button{background:rgba(255,255,255,0.08);color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:12px;transition:.15s}
+body{background:#2a2d32;font-family:Nunito,sans-serif;overflow:hidden;height:100dvh;user-select:none}
+#toolbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(30,32,34,.95);padding:0 16px;display:flex;align-items:center;gap:10px;color:#fff;font-size:13px;height:44px;backdrop-filter:blur(6px)}
+#toolbar button{background:rgba(255,255,255,.08);color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:12px;transition:.15s}
 #toolbar button:hover{background:#2250fc}
+#toolbar button:disabled{opacity:.3;cursor:default}
+#toolbar button:disabled:hover{background:rgba(255,255,255,.08)}
 #toolbar .spacer{flex:1}
-#toolbar a{color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px}
+#toolbar a{color:rgba(255,255,255,.5);text-decoration:none;font-size:12px}
 #toolbar a:hover{color:#fff}
-#page-info{min-width:90px;text-align:center;font-size:12px;color:rgba(255,255,255,0.6)}
-#toolbar .title{font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
-#reader-wrapper{position:fixed;top:44px;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#3a3d42}
-#canvas-wrap{position:relative;display:flex;gap:0;box-shadow:0 4px 30px rgba(0,0,0,.4);border-radius:2px;overflow:hidden}
-#canvas-wrap canvas{cursor:pointer;display:block;background:#fff}
-#canvas-left{border-right:1px solid rgba(0,0,0,.08)}
-#loading-overlay{position:fixed;top:44px;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(42,45,50,.98);z-index:50;transition:opacity .4s}
+#page-info{min-width:100px;text-align:center;font-size:12px;color:rgba(255,255,255,.7)}
+#toolbar .title{font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:rgba(255,255,255,.85)}
+#reader-wrapper{position:fixed;top:44px;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3a3d42 0%,#2a2d32 100%)}
+#book{position:relative;display:flex;perspective:2000px}
+.page-slot{position:relative;overflow:hidden;cursor:pointer}
+.page-slot canvas{display:block}
+#page-left{border-radius:4px 0 0 4px}
+#page-right{border-radius:0 4px 4px 0}
+/* Spine shadow */
+#book::after{content:'';position:absolute;top:0;bottom:0;left:50%;width:24px;transform:translateX(-50%);background:linear-gradient(90deg,rgba(0,0,0,.08) 0%,rgba(0,0,0,.02) 30%,rgba(0,0,0,.02) 70%,rgba(0,0,0,.08) 100%);pointer-events:none;z-index:10}
+/* Flipping page */
+#flip-container{position:absolute;top:0;left:50%;width:50%;height:100%;z-index:20;pointer-events:none;perspective:2000px}
+#flip-page{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:left center;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.22,.61,.36,1);backface-visibility:hidden;border-radius:0 4px 4px 0;overflow:hidden;box-shadow:-4px 0 12px rgba(0,0,0,.15)}
+#flip-page.flipping{transform:rotateY(-180deg)}
+#flip-page canvas{display:block}
+/* Flip the other way (prev page) */
+#flip-container-prev{position:absolute;top:0;right:50%;width:50%;height:100%;z-index:20;pointer-events:none;perspective:2000px}
+#flip-page-prev{position:absolute;top:0;right:0;width:100%;height:100%;transform-origin:right center;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.22,.61,.36,1);backface-visibility:hidden;border-radius:4px 0 0 4px;overflow:hidden;box-shadow:4px 0 12px rgba(0,0,0,.15)}
+#flip-page-prev.flipping{transform:rotateY(180deg)}
+#flip-page-prev canvas{display:block}
+/* Loading */
+#loading-overlay{position:fixed;top:44px;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(42,45,50,.98);z-index:50;transition:opacity .5s}
 #loading-overlay.hidden{opacity:0;pointer-events:none}
 .spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.08);border-top-color:#2250fc;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#loading-text{color:rgba(255,255,255,.5);margin-top:14px;font-size:13px}
+#loading-text{color:rgba(255,255,255,.5);margin-top:14px;font-size:14px}
+/* Page gutter hint */
+.page-slot::after{content:'';position:absolute;top:0;bottom:0;width:18px;pointer-events:none;opacity:0;transition:opacity .3s}
+#page-left::after{right:0;background:linear-gradient(90deg,transparent,rgba(0,0,0,.06))}
+#page-right::after{left:0;background:linear-gradient(270deg,transparent,rgba(0,0,0,.06))}
+.page-slot:hover::after{opacity:1}
 </style>
 </head>
 <body>
 <div id="toolbar">
-  <button onclick="prevPage()">◀</button>
+  <button id="btn-prev" onclick="prevPage()">◀</button>
   <span id="page-info">—</span>
-  <button onclick="nextPage()">▶</button>
+  <button id="btn-next" onclick="nextPage()">▶</button>
+  <button id="btn-zoomin" onclick="zoomIn()" title="Perbesar">➕</button>
+  <button id="btn-zoomout" onclick="zoomOut()" title="Perkecil">➖</button>
   <span class="spacer"></span>
   <span class="title">${esc(book.title)}</span>
   <span class="spacer"></span>
   <a href="/buku">✕ Tutup</a>
 </div>
 <div id="reader-wrapper">
-  <div id="canvas-wrap">
-    <canvas id="canvas-left"></canvas>
-    <canvas id="canvas-right"></canvas>
+  <div id="book">
+    <div id="page-left" class="page-slot"></div>
+    <div id="page-right" class="page-slot"></div>
+    <div id="flip-container"><div id="flip-page"></div></div>
+    <div id="flip-container-prev"><div id="flip-page-prev"></div></div>
   </div>
 </div>
 <div id="loading-overlay">
@@ -558,41 +590,121 @@ document.addEventListener("contextmenu",e=>e.preventDefault());
 document.addEventListener("keydown",e=>{
   if((e.ctrlKey&&(e.key==="s"||e.key==="p"))||e.key==="F12")e.preventDefault();
 });
-const TOTAL=${Math.min(book.page_count || 30, 100)};
 const URL="/pdf/${esc(book.slug)}";
-let PDF=null,page=1;
-const CL=document.getElementById("canvas-left"),CR=document.getElementById("canvas-right");
-const CXL=CL.getContext("2d"),CXR=CR.getContext("2d");
-function render(num,canvas,ctx){
-  return PDF.getPage(num).then(p=>{
-    const vp=p.getViewport({scale:1});
-    const dpr=window.devicePixelRatio||1;
-    const h=Math.min(vp.height,window.innerHeight-56);
-    const sc=h/vp.height;
-    const vp2=p.getViewport({scale:sc});
-    canvas.width=vp2.width*dpr;canvas.height=vp2.height*dpr;
-    canvas.style.width=vp2.width+"px";canvas.style.height=vp2.height+"px";
-    ctx.scale(dpr,dpr);
-    return p.render({canvasContext:ctx,viewport:vp2}).promise;
-  });
+const BOOK_ID=${book.id};
+let PDF=null,page=1,TOTAL=0;
+let flipping=false, isMobile=window.innerWidth<768;
+const PL=document.getElementById("page-left"),PR=document.getElementById("page-right");
+const FC=document.getElementById("flip-container"),FP=document.getElementById("flip-page");
+const FCP=document.getElementById("flip-container-prev"),FPP=document.getElementById("flip-page-prev");
+
+/* Hash support: Lompat ke halaman dari URL #page=X */
+const m=location.hash.match(/page=(\d+)/);
+if(m) page=Math.max(1,parseInt(m[1]));
+
+function calcScale(){
+  if(isMobile) return Math.min((window.innerWidth-40)/612, (window.innerHeight-56)/792, 2);
+  return Math.min((window.innerWidth-80)/2/612, (window.innerHeight-56)/792, 1.8);
 }
+
+let scale=calcScale();
+
+function savePage(pg){
+  if(!BOOK_ID) return;
+  const d=new FormData();d.set('book_id',BOOK_ID);d.set('page',pg);
+  navigator.sendBeacon('/baca/save-page',d);
+}
+
+function renderToCanvas(container,num){
+  if(num<1||num>TOTAL){container.innerHTML='';return null}
+  const c=document.createElement('canvas');
+  container.innerHTML='';container.appendChild(c);
+  const dpr=window.devicePixelRatio||1;
+  const w=Math.round(612*scale),h=Math.round(792*scale);
+  c.style.width=w+'px';c.style.height=h+'px';
+  c.width=w*dpr;c.height=h*dpr;
+  const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  PDF.getPage(num).then(p=>p.render({canvasContext:ctx,viewport:p.getViewport({scale:scale})}).promise);
+  return c;
+}
+
 function renderSpread(){
-  const left=page%2===0?page:page-1;
-  const right=page%2===0?page+1:page;
-  if(left>=1) render(left,CL,CXL).catch(()=>{});
-  if(right<=TOTAL) render(right,CR,CXR).catch(()=>{});
-  document.getElementById("page-info").textContent=page+"/"+TOTAL;
+  if(isMobile){
+    renderToCanvas(PL,page);PR.innerHTML='';
+  }else{
+    const left=page%2===0?page-1:page;
+    renderToCanvas(PL,left);renderToCanvas(PR,left+1);
+  }
+  document.getElementById('page-info').textContent=page+'/'+TOTAL;
+  document.getElementById('btn-prev').disabled=page<=1;
+  document.getElementById('btn-next').disabled=page>=TOTAL;
+  FC.style.display='none';FCP.style.display='none';
+  FP.classList.remove('flipping');FPP.classList.remove('flipping');
+  savePage(page);
 }
-function nextPage(){if(page<TOTAL){page++;renderSpread()}}
-function prevPage(){if(page>1){page--;renderSpread()}}
-CL.onclick=prevPage;CR.onclick=nextPage;
-window.addEventListener("keydown",e=>{
-  if(e.key==="ArrowRight"||e.key==="ArrowDown")nextPage();
-  if(e.key==="ArrowLeft"||e.key==="ArrowUp")prevPage();
-  if(e.key==="Home"){page=1;renderSpread()}
-  if(e.key==="End"){page=TOTAL;renderSpread()}
+
+function nextPage(){
+  if(flipping||page>=TOTAL) return;
+  flipping=true;
+  const next=page+1;
+  if(isMobile){
+    page=next;renderSpread();flipping=false;return;
+  }
+  FC.style.display='';
+  FC.style.left=PR.offsetLeft+'px';
+  FC.style.width=PR.offsetWidth+'px';
+  FC.style.height=PR.offsetHeight+'px';
+  renderToCanvas(FP,next);
+  FP.classList.add('flipping');
+  setTimeout(()=>{page=next;renderSpread();flipping=false},580);
+}
+
+function prevPage(){
+  if(flipping||page<=1) return;
+  flipping=true;
+  const prev=page-1;
+  if(isMobile){
+    page=prev;renderSpread();flipping=false;return;
+  }
+  FCP.style.display='';
+  FCP.style.right=(PL.parentElement.offsetWidth-PL.offsetLeft-PL.offsetWidth)+'px';
+  FCP.style.width=PL.offsetWidth+'px';
+  FCP.style.height=PL.offsetHeight+'px';
+  renderToCanvas(FPP,prev);
+  FPP.classList.add('flipping');
+  setTimeout(()=>{page=prev;renderSpread();flipping=false},580);
+}
+
+function zoomIn(){scale=Math.min(scale+0.2,3);renderSpread()}
+function zoomOut(){scale=Math.max(scale-0.2,0.4);renderSpread()}
+
+PL.addEventListener('click',e=>{
+  const r=PL.getBoundingClientRect(),x=e.clientX-r.left;
+  if(x<r.width*0.4) prevPage();else if(x>r.width*0.6) nextPage()
 });
-pdfjsLib.getDocument(URL).promise.then(p=>{PDF=p;TOTAL=Math.min(p.numPages,100);document.getElementById("loading-overlay").classList.add("hidden");renderSpread();});
+PR.addEventListener('click',e=>{
+  const r=PR.getBoundingClientRect(),x=e.clientX-r.left;
+  if(x<r.width*0.4) prevPage();else if(x>r.width*0.6) nextPage()
+});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();nextPage()}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();prevPage()}
+  if(e.key==='Home'){e.preventDefault();page=1;renderSpread()}
+  if(e.key==='End'){e.preventDefault();page=TOTAL;renderSpread()}
+});
+window.addEventListener('resize',()=>{
+  isMobile=window.innerWidth<768;
+  scale=calcScale();renderSpread()
+});
+
+pdfjsLib.getDocument(URL).promise.then(p=>{
+  PDF=p;TOTAL=Math.min(p.numPages,500);
+  renderSpread();
+  document.getElementById('loading-overlay').classList.add('hidden');
+}).catch(()=>{
+  document.getElementById('loading-text').textContent='Gagal memuat PDF. Coba lagi.';
+});
 </script>
 </body>
 </html>`);

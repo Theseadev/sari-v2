@@ -18,6 +18,7 @@ import * as catsCrud from "./controllers/admin/categories";
 import * as password from "./controllers/password";
 import * as profile from "./controllers/profile";
 import * as bookmarks from "./controllers/bookmarks";
+import * as readerCtrl from "./controllers/reader";
 import { csrfProtection } from "./middleware/csrf";
 
 const app = new Hono();
@@ -67,9 +68,11 @@ app.get("/buku/:slug/full", (c) => books.detailPage(c));
 
 // PDF Reader & Proxy
 app.get("/baca/:slug", (c) => books.reader(c));
+app.post("/baca/save-page", (c) => readerCtrl.savePage(c));
 app.get("/pdf/:slug", (c) => pdf.servePdf(c));
 
 // ADMIN
+app.get("/admin", (c) => dash.dashboard(c));
 app.get("/admin/logs", (c) => logsCtrl.logs(c));
 
 // Books CRUD
@@ -118,10 +121,7 @@ app.post("/admin/categories/:id/delete", (c) => catsCrud.remove(c));
 // Error handler
 app.onError((err, c) => {
 	console.error(`[ERROR] ${c.req.method} ${c.req.path}:`, err.message);
-	return c.html(
-		errorPage(500, "Internal Server Error", err.message),
-		500,
-	);
+	return c.html(errorPage(500, "Internal Server Error", err.message), 500);
 });
 
 // 404
