@@ -2,7 +2,7 @@
 
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
-import { query } from "../config/database";
+import { query, queryOne } from "../config/database";
 import type { Stats, ActivityLog, Book } from "../types";
 import { esc } from "../helpers";
 import { adminLayout } from "../views/admin/helpers";
@@ -38,17 +38,37 @@ export async function dashboard(c: Context) {
 	};
 
 	// Logs
+	const perPageLogs = 5;
+	const logsPage = Math.max(1, Number(c.req.query("logs_page")) || 1);
+	const logsOffset = (logsPage - 1) * perPageLogs;
+
+	const logsTotal = await queryOne<{ cnt: number }>(
+		"SELECT COUNT(*) AS cnt FROM activity_logs",
+	);
+	const logsTotalPages = Math.ceil((logsTotal?.cnt || 0) / perPageLogs);
+
 	const logs = await query<ActivityLog[]>(
 		`SELECT al.*, u.name AS user_name
 		 FROM activity_logs al LEFT JOIN users u ON u.id = al.user_id
-		 ORDER BY al.created_at DESC LIMIT 8`,
+		 ORDER BY al.created_at DESC
+		 LIMIT ${perPageLogs} OFFSET ${logsOffset}`,
 	);
 
 	// Buku terbaru
+	const perPageBooks = 5;
+	const booksPage = Math.max(1, Number(c.req.query("books_page")) || 1);
+	const booksOffset = (booksPage - 1) * perPageBooks;
+
+	const booksTotal = await queryOne<{ cnt: number }>(
+		"SELECT COUNT(*) AS cnt FROM books",
+	);
+	const booksTotalPages = Math.ceil((booksTotal?.cnt || 0) / perPageBooks);
+
 	const recentBooks = await query<Book[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type, b.cover_image, b.views, b.created_at
 		 FROM books b
-		 ORDER BY b.created_at DESC LIMIT 5`,
+		 ORDER BY b.created_at DESC
+		 LIMIT ${perPageBooks} OFFSET ${booksOffset}`,
 	);
 
 	// ── Render Stats ──
@@ -137,7 +157,7 @@ export async function dashboard(c: Context) {
 				<div class="dash-section">
 					<div class="dash-section-header">
 						<h2>Aktivitas Terkini</h2>
-						<span class="dash-section-count">${logs.length}</span>
+						<span class="dash-section-count">${logsTotal?.cnt || 0} total</span>
 					</div>
 					<div class="dash-table-wrap">
 					<table class="dash-table">
@@ -145,6 +165,18 @@ export async function dashboard(c: Context) {
 						<tbody>${logRows}</tbody>
 					</table>
 					</div>
+					${
+						logsTotalPages > 1
+							? `
+					<div class="admin-pagination">
+						<span class="admin-page-info">Hal ${logsPage}/${logsTotalPages}</span>
+						<div class="admin-page-btns">
+							<a href="?logs_page=${logsPage - 1}" class="admin-page-num${logsPage <= 1 ? " disabled" : ""}">&laquo;</a>
+							<a href="?logs_page=${logsPage + 1}" class="admin-page-num${logsPage >= logsTotalPages ? " disabled" : ""}">&raquo;</a>
+						</div>
+					</div>`
+							: ""
+					}
 				</div>
 
 				<!-- Recent Books -->
@@ -159,6 +191,18 @@ export async function dashboard(c: Context) {
 						<tbody>${recentRows}</tbody>
 					</table>
 					</div>
+					${
+						booksTotalPages > 1
+							? `
+					<div class="admin-pagination">
+						<span class="admin-page-info">Hal ${booksPage}/${booksTotalPages}</span>
+						<div class="admin-page-btns">
+							<a href="?books_page=${booksPage - 1}" class="admin-page-num${booksPage <= 1 ? " disabled" : ""}">&laquo;</a>
+							<a href="?books_page=${booksPage + 1}" class="admin-page-num${booksPage >= booksTotalPages ? " disabled" : ""}">&raquo;</a>
+						</div>
+					</div>`
+							: ""
+					}
 				</div>
 			</div>
 
