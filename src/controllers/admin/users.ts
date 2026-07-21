@@ -9,19 +9,28 @@ import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 
 // ── List ──
+const perPage = 5;
+
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
 	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const flash = getFlash(c);
+	const page = Math.max(1, Number(c.req.query("page")) || 1);
+	const offset = (page - 1) * perPage;
+
+	const total = await queryOne<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM users");
+	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+
 	const users = await query<any[]>(
 		`SELECT u.id, u.username, u.name, u.email, u.nim_nip, u.status,
           r.name AS role_name, u.last_login, u.created_at
    FROM users u JOIN roles r ON r.id = u.role_id
-   ORDER BY u.created_at DESC`,
+   ORDER BY u.created_at DESC
+   LIMIT ${perPage} OFFSET ${offset}`,
 	);
 	return c.html(
-		userList(users, { name: user.name, roleName: user.roleName }, "users"),
+		userList(users, { name: user.name, roleName: user.roleName }, "users", { page, totalPages, total: total?.cnt || 0 }),
 	);
 }
 

@@ -44,10 +44,12 @@ export function catList(
   <a href="/admin/categories/create" class="btn btn-primary btn-sm">+ Tambah</a>
 </div>
 <div class="admin-card">
+  <div class="table-wrap">
   <table class="table">
     <thead><tr><th>ID</th><th>Nama</th><th>Deskripsi</th><th>Jml Buku</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
+  </div>
 </div>`;
 
 	return adminLayout("Kelola Kategori", body, user, currentPage);

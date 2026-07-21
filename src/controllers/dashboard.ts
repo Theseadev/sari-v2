@@ -11,7 +11,8 @@ import { getUser, getFlash } from "../helpers";
 export async function dashboard(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const flash = getFlash(c);
 
 	const [bookCount] = await query<any[]>("SELECT COUNT(*) AS c FROM books");
@@ -29,11 +30,11 @@ export async function dashboard(c: Context) {
 	);
 
 	const stats = {
-		total_books: bookCount.c,
-		total_users: userCount.c,
-		total_public: pubCount.c,
-		total_internal: intCount.c,
-		total_views: viewCount.c,
+		total_books: Number(bookCount.c),
+		total_users: Number(userCount.c),
+		total_public: Number(pubCount.c),
+		total_internal: Number(intCount.c),
+		total_views: Number(viewCount.c),
 	};
 
 	// Logs
@@ -51,36 +52,31 @@ export async function dashboard(c: Context) {
 	);
 
 	// ── Render Stats ──
+	const icons = {
+		books: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+		public: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+		internal: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+		users: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+		views: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+	};
 	const statCards = [
-		{
-			label: "Total Buku",
-			value: stats.total_books,
-			color: "#2250fc",
-		},
-		{
-			label: "Publik",
-			value: stats.total_public,
-			color: "#059669",
-		},
-		{
-			label: "Internal",
-			value: stats.total_internal,
-			color: "#d97706",
-		},
-		{
-			label: "User Aktif",
-			value: stats.total_users,
-			color: "#7c3aed",
-		},
+		{ label: "Total Buku", value: stats.total_books, icon: icons.books },
+		{ label: "Publik", value: stats.total_public, icon: icons.public },
+		{ label: "Internal", value: stats.total_internal, icon: icons.internal },
+		{ label: "User Aktif", value: stats.total_users, icon: icons.users },
 		{
 			label: "Total Dibaca",
-			value: stats.total_views,
-			color: "#0891b2",
+			value: stats.total_views.toLocaleString("id-ID"),
+			icon: icons.views,
 		},
 	]
 		.map(
-			(s) => `<div class="stat-card" style="border-left:3px solid ${s.color}">
-		<div><span class="stat-number">${s.value}</span><span class="stat-label">${s.label}</span></div>
+			(s) => `<div class="stat-item">
+		<span class="stat-icon">${s.icon}</span>
+		<div class="stat-body">
+			<span class="stat-num">${s.value}</span>
+			<span class="stat-lbl">${s.label}</span>
+		</div>
 	</div>`,
 		)
 		.join("");
@@ -127,24 +123,24 @@ export async function dashboard(c: Context) {
 				<div class="admin-avatar">${esc(user.name.charAt(0).toUpperCase())}</div>
 				<div>
 					<h1>Selamat datang, ${esc(user.name.split(" ")[0])}</h1>
-					<p class="text-muted" style="font-size:0.85rem">
-						${user.roleName === "super_admin" ? "Super Admin" : "Pustakawan"} ·
-						${stats.total_books} buku terkelola
+					<p style="color:var(--text-muted);font-size:0.85rem;margin-top:2px">
+						${user.roleName === "super_admin" ? "Super Admin" : "Pustakawan"} · ${stats.total_books} buku terkelola
 					</p>
 				</div>
 			</div>
 
-			<!-- Stats -->
-			<div class="stats-grid">${statCards}</div>
+			<!-- Stats Bar -->
+			<div class="stats-bar">${statCards}</div>
 
-			<div class="admin-grid-2">
+			<div class="admin-dash-grid">
 				<!-- Recent Activity -->
-				<div class="admin-card">
-					<div class="card-header">
+				<div class="dash-section">
+					<div class="dash-section-header">
 						<h2>Aktivitas Terkini</h2>
+						<span class="dash-section-count">${logs.length}</span>
 					</div>
-					<div style="overflow-x:auto">
-					<table class="table">
+					<div class="dash-table-wrap">
+					<table class="dash-table">
 						<thead><tr><th>User</th><th>Aksi</th><th>Keterangan</th><th>Waktu</th></tr></thead>
 						<tbody>${logRows}</tbody>
 					</table>
@@ -152,13 +148,13 @@ export async function dashboard(c: Context) {
 				</div>
 
 				<!-- Recent Books -->
-				<div class="admin-card">
-					<div class="card-header">
+				<div class="dash-section">
+					<div class="dash-section-header">
 						<h2>Buku Terbaru</h2>
-						<a href="/buku" class="btn-sm">Lihat Semua →</a>
+						<a href="/buku" class="dash-link">Lihat Semua →</a>
 					</div>
-					<div style="overflow-x:auto">
-					<table class="table">
+					<div class="dash-table-wrap">
+					<table class="dash-table">
 						<thead><tr><th style="width:44px"></th><th>Judul</th><th>Akses</th><th>Ditambahkan</th></tr></thead>
 						<tbody>${recentRows}</tbody>
 					</table>
@@ -169,7 +165,14 @@ export async function dashboard(c: Context) {
 		</div>
 	</div>`;
 
-	return c.html(adminLayout("Dashboard Admin", body, { name: user.name, roleName: user.roleName }, "dashboard"));
+	return c.html(
+		adminLayout(
+			"Dashboard Admin",
+			body,
+			{ name: user.name, roleName: user.roleName },
+			"dashboard",
+		),
+	);
 }
 
 /* ── Helpers ── */
@@ -197,4 +200,3 @@ function timeAgo(dateStr: string): string {
 	if (diff < 2592000) return `${Math.floor(diff / 86400)}h`;
 	return dateStr.slice(0, 10);
 }
-

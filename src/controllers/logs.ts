@@ -12,7 +12,7 @@ export async function logs(c: Context) {
 	if (!user) return c.redirect("/login");
 	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const _flash = getFlash(c);
-	const perPage = 20;
+	const perPage = 5;
 	const page = Math.max(1, Number(c.req.query("page")) || 1);
 	const offset = (page - 1) * perPage;
 

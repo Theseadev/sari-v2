@@ -7,19 +7,35 @@ import { getUser } from "../../helpers";
 import { errorPage } from "../../views/html";
 import { getFlash, setFlash } from "../flash";
 
+const perPage = 5;
+
 // ── List ──
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/admin");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/admin");
 	const flash = getFlash(c);
+	const page = Math.max(1, Number(c.req.query("page")) || 1);
+	const offset = (page - 1) * perPage;
+
+	const total = await queryOne<{ cnt: number }>(
+		"SELECT COUNT(*) AS cnt FROM programs",
+	);
+	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+
 	const progs = await query<any[]>(
 		`SELECT p.*, f.name AS faculty_name
    FROM programs p JOIN faculties f ON f.id = p.faculty_id
-   ORDER BY f.name, p.name`,
+   ORDER BY f.name, p.name
+   LIMIT ${perPage} OFFSET ${offset}`,
 	);
 	return c.html(
-		progList(progs, { name: user.name, roleName: user.roleName }, "programs"),
+		progList(progs, { name: user.name, roleName: user.roleName }, "programs", {
+			page,
+			totalPages,
+			total: total?.cnt || 0,
+		}),
 	);
 }
 
@@ -30,9 +46,7 @@ export async function createForm(c: Context) {
 	const facs = await query<{ id: number; name: string }[]>(
 		"SELECT id, name FROM faculties ORDER BY name",
 	);
-	return c.html(
-		progForm({ name: user.name, roleName: user.roleName }, facs),
-	);
+	return c.html(progForm({ name: user.name, roleName: user.roleName }, facs));
 }
 
 // ── Store ──
@@ -59,10 +73,11 @@ export async function store(c: Context) {
 		return c.redirect("/admin/programs/create");
 	}
 
-	await query(
-		"INSERT INTO programs (faculty_id, name, slug) VALUES (?,?,?)",
-		[facultyId, name, slug],
-	);
+	await query("INSERT INTO programs (faculty_id, name, slug) VALUES (?,?,?)", [
+		facultyId,
+		name,
+		slug,
+	]);
 
 	setFlash(c, `Program studi "${name}" berhasil ditambahkan.`, "success");
 	return c.redirect("/admin/programs");
@@ -104,10 +119,12 @@ export async function update(c: Context) {
 
 	const slug = makeSlug(name);
 
-	await query(
-		"UPDATE programs SET faculty_id=?, name=?, slug=? WHERE id=?",
-		[facultyId, name, slug, id],
-	);
+	await query("UPDATE programs SET faculty_id=?, name=?, slug=? WHERE id=?", [
+		facultyId,
+		name,
+		slug,
+		id,
+	]);
 
 	setFlash(c, `Program studi "${name}" berhasil diupdate.`, "success");
 	return c.redirect("/admin/programs");

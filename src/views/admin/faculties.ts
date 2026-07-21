@@ -44,10 +44,12 @@ export function facList(
   <a href="/admin/faculties/create" class="btn btn-primary btn-sm">+ Tambah</a>
 </div>
 <div class="admin-card">
+  <div class="table-wrap">
   <table class="table">
     <thead><tr><th>ID</th><th>Nama</th><th>Deskripsi</th><th>Jml Prodi</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
+  </div>
 </div>`;
 
 	return adminLayout("Kelola Fakultas", body, user, currentPage);

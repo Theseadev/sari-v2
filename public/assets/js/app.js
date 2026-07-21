@@ -20,13 +20,13 @@ document.addEventListener("DOMContentLoaded", function () {
 	const savedTheme = document.documentElement.getAttribute("data-theme") || "light";
 	const themeBtn = document.getElementById("themeToggle");
 	if (themeBtn) {
-		themeBtn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+		themeBtn.textContent = savedTheme === "dark" ? "🌙" : "☀";
 		themeBtn.addEventListener("click", function () {
 			const current = document.documentElement.getAttribute("data-theme");
 			const next = current === "dark" ? "light" : "dark";
 			document.documentElement.setAttribute("data-theme", next);
 			localStorage.setItem("theme", next);
-			themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
+			themeBtn.textContent = next === "dark" ? "🌙" : "☀";
 		});
 	}
 

@@ -20,6 +20,7 @@ export function userList(
 	users: UserRow[],
 	user: { name: string; roleName: string },
 	currentPage?: string,
+	pagination?: { page: number; totalPages: number; total: number },
 ): string {
 	let rows = "";
 	if (users.length === 0) {
@@ -46,16 +47,58 @@ export function userList(
 		}
 	}
 
+	let paginationHtml = "";
+	if (pagination && pagination.totalPages > 1) {
+		const p = pagination;
+		const pageLink = (n: number) => `/admin/users?page=${n}`;
+		const pages: (number | "...")[] = [];
+		if (p.totalPages <= 7) {
+			for (let i = 1; i <= p.totalPages; i++) pages.push(i);
+		} else {
+			pages.push(1);
+			let start = Math.max(2, p.page - 1);
+			let end = Math.min(p.totalPages - 1, p.page + 1);
+			if (p.page <= 3) end = Math.min(4, p.totalPages - 1);
+			else if (p.page >= p.totalPages - 2)
+				start = Math.max(p.totalPages - 3, 2);
+			if (start > 2) pages.push("...");
+			for (let i = start; i <= end; i++) pages.push(i);
+			if (end < p.totalPages - 1) pages.push("...");
+			pages.push(p.totalPages);
+		}
+		let pageNums = "";
+		for (const pg of pages) {
+			if (pg === "...") {
+				pageNums += `<span class="admin-page-dots">…</span>`;
+			} else {
+				const cls = pg === p.page ? " admin-page-active" : "";
+				pageNums += `<a href="${pageLink(pg)}" class="admin-page-num${cls}">${pg}</a>`;
+			}
+		}
+		paginationHtml = `
+  <div class="admin-pagination">
+    <span class="admin-page-info">${p.total} user · Hal ${p.page}/${p.totalPages}</span>
+    <div class="admin-page-btns">
+      <a href="${pageLink(p.page - 1)}" class="admin-page-num${p.page <= 1 ? " disabled" : ""}">&laquo;</a>
+      ${pageNums}
+      <a href="${pageLink(p.page + 1)}" class="admin-page-num${p.page >= p.totalPages ? " disabled" : ""}">&raquo;</a>
+    </div>
+  </div>`;
+	}
+
 	const body = `
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">Kelola User</h2>
   <a href="/admin/users/create" class="btn btn-primary btn-sm">+ Tambah User</a>
 </div>
 <div class="admin-card">
+  <div class="table-wrap">
   <table class="table">
     <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
+  </div>
+  ${paginationHtml}
 </div>`;
 
 	return adminLayout("Kelola User", body, user, currentPage);

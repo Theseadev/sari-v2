@@ -2,6 +2,8 @@
 
 import { esc } from "../../helpers";
 import { csrfToken } from "../html";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 export function adminLayout(
 	title: string,
@@ -9,6 +11,7 @@ export function adminLayout(
 	user: { name: string; roleName: string },
 	currentPage?: string,
 ): string {
+	const logoPath = getAdminLogo();
 	return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -23,8 +26,7 @@ export function adminLayout(
 <header class="admin-header-bar">
   <div class="ahb-left">
     <a href="/admin" class="ahb-logo">
-      <span class="ahb-logo-icon">S</span>
-      <span class="ahb-logo-text">SARI</span>
+      ${logoPath ? `<img src="${esc(logoPath)}" alt="SARI" style="height:32px">` : `<span class="ahb-logo-icon">S</span><span class="ahb-logo-text">SARI</span>`}
       <span class="ahb-logo-sub">Admin Panel</span>
     </a>
   </div>
@@ -42,7 +44,7 @@ export function adminLayout(
     <a href="/" class="ahb-icon-btn" title="Lihat Situs">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
     </a>
-    <button type="button" class="theme-toggle" id="themeToggle" title="Ganti tema">🌙</button>
+    <button type="button" class="theme-toggle" id="themeToggle" title="Ganti tema">☀</button>
     <div class="ahb-divider"></div>
     <div class="ahb-profile">
       <div class="ahb-avatar">${esc(user.name.charAt(0).toUpperCase())}</div>
@@ -73,12 +75,42 @@ function sidebar(
 	currentPage?: string,
 ): string {
 	const navItems = [
-		{ href: "/admin", label: "Dashboard", id: "dashboard" },
-		{ href: "/admin/books", label: "Buku", id: "books" },
-		{ href: "/admin/faculties", label: "Fakultas", id: "faculties" },
-		{ href: "/admin/programs", label: "Prodi", id: "programs" },
-		{ href: "/admin/users", label: "User", id: "users" },
-		{ href: "/admin/logs", label: "Log Aktivitas", id: "logs" },
+		{
+			href: "/admin",
+			label: "Dashboard",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+			id: "dashboard",
+		},
+		{
+			href: "/admin/books",
+			label: "Buku",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+			id: "books",
+		},
+		{
+			href: "/admin/faculties",
+			label: "Fakultas",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`,
+			id: "faculties",
+		},
+		{
+			href: "/admin/programs",
+			label: "Prodi",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`,
+			id: "programs",
+		},
+		{
+			href: "/admin/users",
+			label: "User",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+			id: "users",
+		},
+		{
+			href: "/admin/logs",
+			label: "Log Aktivitas",
+			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+			id: "logs",
+		},
 	];
 
 	let links = "";
@@ -86,6 +118,7 @@ function sidebar(
 		const active = currentPage === item.id ? " active" : "";
 		if (item.id === "logs" && user.roleName !== "super_admin") continue;
 		links += `<a href="${item.href}" class="sb-link${active}">
+      <span class="sb-icon">${item.icon}</span>
       <span class="sb-label">${item.label}</span>
     </a>`;
 	}
@@ -159,4 +192,13 @@ export function selectField(
   <label for="${name}">${esc(label)}</label>
   <select id="${name}" name="${name}" class="form-control"${req}>${optsHtml}</select>
 </div>`;
+}
+
+function getAdminLogo(): string | null {
+	const candidates = ["logo-admin.svg", "logo-admin.png", "logo-admin.webp"];
+	for (const name of candidates) {
+		const p = join(process.cwd(), "public", "uploads", name);
+		if (existsSync(p)) return `/uploads/${name}`;
+	}
+	return null;
 }
