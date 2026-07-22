@@ -70,22 +70,26 @@ function getCatalogStyles(): string {
         .hero-catalog {
             background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             color: #fff;
-            padding: 120px 20px 80px;
+            padding: 100px 20px 60px;
             text-align: center;
-            border-radius: 0 0 30px 30px;
+            border-radius: 0 0 40px 40px;
             margin-bottom: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         .hero-catalog h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 2.2rem;
+            margin-bottom: 8px;
             font-family: var(--font-heading);
             letter-spacing: -0.5px;
+            font-weight: 600;
         }
         .hero-catalog p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin-bottom: 30px;
+            font-size: 1.05rem;
+            opacity: 0.85;
+            margin-bottom: 28px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         /* Filter Form */
@@ -151,9 +155,32 @@ function getCatalogStyles(): string {
         .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         
         @media (max-width: 768px) {
+            .hero-catalog { padding: 80px 16px 40px; }
+            .hero-catalog h1 { font-size: 1.6rem; }
+            .hero-catalog p { font-size: 0.9rem; }
             .filter-row { grid-template-columns: 1fr; }
             .search-box { flex-direction: column; }
             .search-box button { padding: 14px; }
+            .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 14px;
+            }
+            .info { padding: 10px; }
+            .info h3 { font-size: 0.85rem; }
+            .info .author { font-size: 0.72rem; }
+            .meta { font-size: 0.7rem; padding-top: 8px; gap: 4px; flex-wrap: wrap; }
+            .meta-stat svg { width: 11px; height: 11px; }
+        }
+
+        @media (max-width: 480px) {
+            .book-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .catalog-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+            .hero-catalog h1 { font-size: 1.3rem; }
+            .pagination .btn { font-size: 0.78rem; padding: 6px 12px; }
+            .page-info { font-size: 0.75rem; }
         }
 
         /* Custom Dropdown — Glassmorphism eksklusif di hero */
@@ -278,27 +305,28 @@ function getCatalogStyles(): string {
         .dropdown-list::-webkit-scrollbar-track { background: transparent; }
         .dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-        /* Book Grid & Cards — Theme-Aware */
+        /* Book Grid & Cards — Premium */
         .book-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
             margin-bottom: 40px;
         }
         .book-card {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             cursor: pointer;
             display: flex;
             flex-direction: column;
             border: 1px solid var(--border-light);
+            position: relative;
         }
         .book-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             border-color: var(--primary);
         }
         .cover-wrap {
@@ -311,9 +339,16 @@ function getCatalogStyles(): string {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .book-card:hover .cover-wrap img { transform: scale(1.05); }
+        .book-card:hover .cover-wrap img { transform: scale(1.08); }
+        .cover-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.03) 100%);
+            pointer-events: none;
+        }
         .cover-placeholder {
             width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
@@ -322,30 +357,61 @@ function getCatalogStyles(): string {
         }
         .access-badge {
             position: absolute;
-            top: 12px; right: 12px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
+            top: 10px; right: 10px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.62rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .access-badge.internal { background: rgba(220, 38, 38, 0.9); color: white; }
-        .access-badge.public { background: rgba(16, 185, 129, 0.9); color: white; }
+        .access-badge.internal { background: #ef4444; color: white; }
+        .access-badge.public { background: #10b981; color: white; }
         
-        .info { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+        .info { padding: 14px; flex: 1; display: flex; flex-direction: column; }
         .info h3 {
-            font-size: 1.05rem; margin: 0 0 6px;
+            font-size: 0.95rem; margin: 0 0 4px;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
             overflow: hidden; line-height: 1.4; color: var(--text-heading);
+            font-weight: 600;
         }
-        .info .author { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; flex: 1; }
-        .meta { display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; border-top: 1px solid var(--border-light); padding-top: 12px; }
-        .meta-badge { background: var(--bg-elevated); padding: 4px 8px; border-radius: 6px; color: var(--text-muted); font-weight: 500; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .meta-stat { display: flex; align-items: center; gap: 6px; color: var(--text-dim); }
-        .meta-stat svg { width: 14px; height: 14px; }
+        .info .author {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            flex: 1;
+            font-style: italic;
+        }
+        .meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.75rem;
+            border-top: 1px solid var(--border-light);
+            padding-top: 10px;
+        }
+        .meta-badge {
+            background: var(--bg-elevated);
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.7rem;
+        }
+        .meta-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .meta-stat svg { width: 13px; height: 13px; }
         
         /* Catalog Section Header */
         .catalog-header {
@@ -353,72 +419,96 @@ function getCatalogStyles(): string {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            padding-bottom: 14px;
             border-bottom: 2px solid var(--border-light);
-            padding-bottom: 12px;
         }
         .catalog-header h2 {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             color: var(--text-heading);
             font-family: var(--font-heading);
+            font-weight: 600;
         }
         .catalog-total {
             background: var(--bg-elevated);
-            padding: 4px 14px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-muted);
+            border: 1px solid var(--border-light);
         }
         
-        /* Pagination — Theme-Aware */
+        /* Pagination */
         .pagination {
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            margin: 40px 0;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 36px 0 20px;
+            flex-wrap: wrap;
         }
         .pagination .btn {
-            padding: 10px 20px; border-radius: 10px; font-weight: 600;
-            border: 1px solid var(--border); color: var(--text);
-            text-decoration: none; transition: 0.2s;
+            padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+            border: 1.5px solid var(--border); color: var(--text);
+            text-decoration: none; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
         }
-        .pagination .btn:hover { background: var(--bg-warm); border-color: var(--primary); color: var(--primary); }
-        .page-info { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+        .pagination .btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        .page-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0 12px;
+        }
 
-        /* Modal — Theme-Aware */
+        /* Modal Premium */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: 9999;
             display: flex; align-items: center; justify-content: center;
             opacity: 0; visibility: hidden;
             transition: all 0.3s ease;
+            padding: 20px;
         }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-card {
             background: var(--bg-card);
-            border-radius: 24px;
-            width: 92%; max-width: 960px;
-            max-height: min(85vh, 720px);
+            border-radius: 20px;
+            width: 100%; max-width: 960px;
+            max-height: min(88vh, 720px);
             overflow-y: auto;
             position: relative;
             transform: scale(0.95) translateY(20px);
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
             border: 1px solid var(--border-light);
             display: flex;
             flex-direction: column;
         }
         .modal-overlay.show .modal-card { transform: scale(1) translateY(0); }
+        .modal-card::-webkit-scrollbar { width: 6px; }
+        .modal-card::-webkit-scrollbar-track { background: transparent; }
+        .modal-card::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         .modal-close {
-            position: absolute; top: 20px; right: 20px;
-            background: var(--bg-warm); border: none;
+            position: absolute; top: 16px; right: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border-light);
             width: 36px; height: 36px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s; z-index: 10;
+            cursor: pointer; transition: all 0.2s; z-index: 10;
             color: var(--text-muted);
         }
-        .modal-close:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .modal-close:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #ef4444;
+        }
         
         .book-modal-grid {
             display: grid;
@@ -836,11 +926,11 @@ export async function catalog(c: Context) {
     let bookCards = "";
     if (books.length === 0) {
         bookCards = `
-            <div style="grid-column:1/-1; text-align:center; padding: 80px 20px;">
-                <div style="font-size:4rem; color:var(--gray-300); margin-bottom:20px;">📚</div>
-                <h3 style="font-size:1.5rem; color:var(--text-heading); margin-bottom:10px;">Buku Tidak Ditemukan</h3>
-                <p style="color:var(--text-muted);">Coba ubah kata kunci pencarian atau sesuaikan filter fakultas/prodi.</p>
-                <a href="/buku" class="btn btn-outline" style="margin-top:20px; display:inline-block; padding:10px 20px; border-radius:8px; text-decoration:none;">Reset Filter</a>
+            <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <h3>Buku Tidak Ditemukan</h3>
+                <p>Coba ubah kata kunci pencarian atau sesuaikan filter fakultas/prodi.</p>
+                <a href="/buku" class="btn" style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;background:var(--primary);color:#fff;text-decoration:none;font-weight:600;font-size:0.9rem;transition:all 0.2s">Reset Filter</a>
             </div>
         `;
     } else {

@@ -21,3 +21,14 @@ export async function queryOne<T = any>(
 	const rows = await query<T[]>(sql, params);
 	return rows[0] ?? null;
 }
+
+// queryRaw — uses pool.query() instead of pool.execute() to avoid
+// prepared-statement issues (e.g. LIKE binding in mysql2 v3).
+// Same signature as query().
+export async function queryRaw<T = any>(
+	sql: string,
+	params: any[] = [],
+): Promise<T> {
+	const [rows] = await pool.query(sql, params);
+	return rows as T;
+}

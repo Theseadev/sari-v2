@@ -76,16 +76,26 @@ export async function store(c: Context) {
 	const slug = makeSlug(title);
 	const programId = Number(body.program_id) || null;
 
-	// Handle cover upload
+	// Handle cover upload (file upload OR downloaded from OpenLibrary)
 	let coverPath: string | null = null;
 	const cover = body.cover;
-	if (cover && typeof cover === "object" && "arrayBuffer" in cover) {
+	if (cover && typeof cover === "object" && "arrayBuffer" in cover && (cover as any).size > 0) {
 		const buf = Buffer.from(await cover.arrayBuffer());
 		const ext = cover.name.split(".").pop() || "jpg";
 		const filename = `${slug}-${Date.now()}.${ext}`;
 		await mkdir(APP.COVER_PATH, { recursive: true });
 		await writeFile(join(APP.COVER_PATH, filename), buf);
 		coverPath = filename;
+	}
+	// Fallback: cover sudah didownload oleh OpenLibrary auto-fill
+	if (!coverPath) {
+		const dl = body.downloaded_cover;
+		if (dl && typeof dl === "string" && dl.startsWith("ol-")) {
+			const { existsSync } = await import("node:fs");
+			if (existsSync(join(APP.COVER_PATH, dl))) {
+				coverPath = dl;
+			}
+		}
 	}
 
 	// Handle PDF upload
@@ -110,7 +120,7 @@ export async function store(c: Context) {
 		`INSERT INTO books (program_id, uploaded_by, title, slug, author,
       publisher, publication_year, isbn, description, access_type,
       file_path, cover_image, page_count, file_size)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			programId,
 			user.userId,
@@ -189,10 +199,10 @@ export async function update(c: Context) {
 		return c.redirect(`/admin/books/${id}/edit`);
 	}
 
-	// Handle cover upload (optional — keep existing if not provided)
+	// Handle cover upload (file upload OR downloaded from OpenLibrary)
 	let coverPath = existing.cover_image;
 	const cover = body.cover;
-	if (cover && typeof cover === "object" && "arrayBuffer" in cover) {
+	if (cover && typeof cover === "object" && "arrayBuffer" in cover && (cover as any).size > 0) {
 		if (existing.cover_image) {
 			await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(
 				() => {},
@@ -204,6 +214,20 @@ export async function update(c: Context) {
 		await mkdir(APP.COVER_PATH, { recursive: true });
 		await writeFile(join(APP.COVER_PATH, filename), buf);
 		coverPath = filename;
+	}
+	// Fallback: cover dari OpenLibrary auto-fill
+	if (!coverPath || coverPath === existing.cover_image) {
+		const dl = body.downloaded_cover;
+		if (dl && typeof dl === "string" && dl.startsWith("ol-")) {
+			const { existsSync } = await import("node:fs");
+			if (existsSync(join(APP.COVER_PATH, dl))) {
+				// Hapus cover lama kalo beda
+				if (existing.cover_image && existing.cover_image !== dl) {
+					await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(() => {});
+				}
+				coverPath = dl;
+			}
+		}
 	}
 
 	await query(

@@ -55,7 +55,8 @@ export async function modal(c: Context) {
 		`SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.access_type
 		 FROM bookmarks bm JOIN books b ON b.id = bm.book_id
 		 WHERE bm.user_id = ? AND b.status = 'active'
-		 ORDER BY bm.created_at DESC`,
+		 ORDER BY bm.created_at DESC
+		 LIMIT 200`,
 		[user.userId],
 	);
 
@@ -89,51 +90,76 @@ export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
 	const flash = getFlash(c);
+	const search = (c.req.query("q") || "").trim();
+
+	let whereExtra = "";
+	const params: (string | number)[] = [user.userId];
+	if (search) {
+		whereExtra = " AND (b.title LIKE ? OR b.author LIKE ?)";
+		const term = `%${search}%`;
+		params.push(term, term);
+	}
 
 	const books = await query<{ id: number; title: string; slug: string; author: string; cover_image: string | null; access_type: string; created_at: string }[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.access_type, bm.created_at
 		 FROM bookmarks bm JOIN books b ON b.id = bm.book_id
-		 WHERE bm.user_id = ? AND b.status = 'active'
-		 ORDER BY bm.created_at DESC`,
-		[user.userId],
+		 WHERE bm.user_id = ? AND b.status = 'active'${whereExtra}
+		 ORDER BY bm.created_at DESC
+		 LIMIT 200`,
+		params,
 	);
 
 	let bookCards = "";
 	if (books.length === 0) {
 		bookCards = `
-			<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center">
-				<div style="width:80px;height:80px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--primary);font-size:2rem">🔖</div>
-				<h3 style="font-family:var(--font-heading);font-size:1.3rem;color:var(--text-heading);margin-bottom:8px;font-weight:400">Belum ada bookmark</h3>
-				<p style="color:var(--text-muted);max-width:320px;line-height:1.7">Simpan buku favoritmu dengan menekan tombol bookmark di halaman katalog.</p>
-				<a href="/buku" class="btn btn-primary" style="margin-top:16px">Jelajahi Katalog</a>
+			<div class="empty-state">
+				<div class="empty-icon">🔖</div>
+				<h3>${search ? "Buku tidak ditemukan" : "Belum ada bookmark"}</h3>
+				<p>${search ? "Coba kata kunci lain." : "Simpan buku favoritmu dengan menekan tombol bookmark di halaman katalog."}</p>
+				${search ? `<a href="/bookmark" class="btn btn-primary" style="margin-top:16px">Reset Pencarian</a>` : `<a href="/buku" class="btn btn-primary" style="margin-top:16px">Jelajahi Katalog →</a>`}
 			</div>`;
 	} else {
 		bookCards = books.map((b) => `
 			<div class="book-card" data-book-slug="${esc(b.slug)}">
 				<div class="cover-wrap">
-					${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="${esc(b.title)}" loading="lazy">` : `<div class="book-placeholder">📖</div>`}
-					<span class="access-badge ${b.access_type}">${b.access_type}</span>
+					${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="${esc(b.title)}" loading="lazy">` : `<div class="cover-placeholder">📖</div>`}
+					<span class="access-badge ${b.access_type}">${b.access_type === "internal" ? "Internal" : "Publik"}</span>
+					<form method="POST" action="/bookmark/${b.id}/toggle" style="position:absolute;top:10px;left:10px;margin:0;z-index:2">
+						<button type="submit" class="btn-bookmark-remove" title="Hapus bookmark">✕</button>
+					</form>
 				</div>
 				<div class="info">
 					<h3><a href="/buku/${esc(b.slug)}">${esc(b.title)}</a></h3>
 					<div class="author">${esc(b.author)}</div>
-					<div style="display:flex;gap:8px;margin-top:8px">
+					<div class="meta">
+						<span class="meta-stat">
+							<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+							${new Date(b.created_at).toLocaleDateString("id-ID")}
+						</span>
 						<form method="POST" action="/bookmark/${b.id}/toggle" style="margin:0">
-							<button type="submit" class="btn btn-sm" style="color:var(--danger)">✕ Hapus</button>
+							<button type="submit" class="btn-remove-sm">Hapus</button>
 						</form>
 					</div>
 				</div>
 			</div>`).join("");
 	}
 
+	const searchForm = `
+		<form method="GET" action="/bookmark" style="display:flex;gap:8px;margin-bottom:24px">
+			<input type="text" name="q" placeholder="Cari judul atau penulis..." value="${esc(search)}" style="flex:1;padding:10px 16px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:var(--bg-card);color:var(--text);outline:none">
+			<button type="submit" class="btn btn-primary" style="padding:10px 20px;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cari</button>
+			${search ? `<a href="/bookmark" class="btn btn-outline" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem">Reset</a>` : ""}
+		</form>`;
+
 	const html = layout(
 		"Bookmark Saya",
-		`<section class="section" style="margin-top:64px">
+		`<section class="section" style="margin-top:56px">
 			<div class="container">
-				<div class="section-title">
-					<span>🔖 Bookmark Saya</span>
-					<span class="count">${books.length} buku</span>
+				<div class="page-hero-sm">
+					<h1>🔖 Bookmark Saya</h1>
+					<p>${books.length} buku tersimpan</p>
 				</div>
+				${searchForm}
 				<div class="book-grid">${bookCards}</div>
 			</div>
 		</section>`,
@@ -184,47 +210,73 @@ export async function history(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
 	const flash = getFlash(c);
+	const search = (c.req.query("q") || "").trim();
+
+	let whereExtra = "";
+	const params: (string | number)[] = [user.userId];
+	if (search) {
+		whereExtra = " AND (b.title LIKE ? OR b.author LIKE ?)";
+		const term = `%${search}%`;
+		params.push(term, term);
+	}
 
 	const books = await query<{ id: number; title: string; slug: string; author: string; cover_image: string | null; access_type: string; last_page: number; updated_at: string }[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.access_type, rh.last_page, rh.updated_at
 		 FROM reading_history rh JOIN books b ON b.id = rh.book_id
-		 WHERE rh.user_id = ? AND b.status = 'active'
+		 WHERE rh.user_id = ? AND b.status = 'active'${whereExtra}
 		 ORDER BY rh.updated_at DESC LIMIT 50`,
-		[user.userId],
+		params,
 	);
 
 	let bookCards = "";
 	if (books.length === 0) {
 		bookCards = `
-			<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center">
-				<div style="width:80px;height:80px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--primary);font-size:2rem">📖</div>
-				<h3 style="font-family:var(--font-heading);font-size:1.3rem;color:var(--text-heading);margin-bottom:8px;font-weight:400">Belum ada riwayat</h3>
-				<p style="color:var(--text-muted);max-width:320px;line-height:1.7">Mulai baca buku dan riwayatmu akan muncul di sini.</p>
-				<a href="/buku" class="btn btn-primary" style="margin-top:16px">Jelajahi Katalog</a>
+			<div class="empty-state">
+				<div class="empty-icon">📖</div>
+				<h3>${search ? "Buku tidak ditemukan" : "Belum ada riwayat"}</h3>
+				<p>${search ? "Coba kata kunci lain." : "Mulai baca buku dan riwayatmu akan muncul di sini."}</p>
+				${search ? `<a href="/riwayat" class="btn btn-primary" style="margin-top:16px">Reset Pencarian</a>` : `<a href="/buku" class="btn btn-primary" style="margin-top:16px">Jelajahi Katalog →</a>`}
 			</div>`;
 	} else {
 		bookCards = books.map((b) => `
 			<div class="book-card" data-book-slug="${esc(b.slug)}">
 				<div class="cover-wrap">
-					${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="${esc(b.title)}" loading="lazy">` : `<div class="book-placeholder">📖</div>`}
-					<span class="access-badge ${b.access_type}">${b.access_type}</span>
+					${b.cover_image ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="${esc(b.title)}" loading="lazy">` : `<div class="cover-placeholder">📖</div>`}
+					<span class="access-badge ${b.access_type}">${b.access_type === "internal" ? "Internal" : "Publik"}</span>
 				</div>
 				<div class="info">
 					<h3><a href="/buku/${esc(b.slug)}">${esc(b.title)}</a></h3>
 					<div class="author">${esc(b.author)}</div>
-					<div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px">Terakhir dilihat: ${new Date(b.updated_at).toLocaleDateString("id-ID")}</div>
+					<div class="meta">
+						<span class="meta-stat">
+							<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+							Hal. ${b.last_page}
+						</span>
+						<span class="meta-stat">
+							<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+							${new Date(b.updated_at).toLocaleDateString("id-ID")}
+						</span>
+					</div>
 				</div>
 			</div>`).join("");
 	}
 
+	const searchForm = `
+		<form method="GET" action="/riwayat" style="display:flex;gap:8px;margin-bottom:24px">
+			<input type="text" name="q" placeholder="Cari judul atau penulis..." value="${esc(search)}" style="flex:1;padding:10px 16px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:var(--bg-card);color:var(--text);outline:none">
+			<button type="submit" class="btn btn-primary" style="padding:10px 20px;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cari</button>
+			${search ? `<a href="/riwayat" class="btn btn-outline" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem">Reset</a>` : ""}
+		</form>`;
+
 	const html = layout(
 		"Riwayat Baca",
-		`<section class="section" style="margin-top:64px">
+		`<section class="section" style="margin-top:56px">
 			<div class="container">
-				<div class="section-title">
-					<span>📖 Riwayat Baca</span>
-					<span class="count">${books.length} buku</span>
+				<div class="page-hero-sm">
+					<h1>📖 Riwayat Baca</h1>
+					<p>${books.length} buku pernah dibaca</p>
 				</div>
+				${searchForm}
 				<div class="book-grid">${bookCards}</div>
 			</div>
 		</section>`,

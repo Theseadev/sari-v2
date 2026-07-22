@@ -19,6 +19,7 @@ import * as password from "./controllers/password";
 import * as profile from "./controllers/profile";
 import * as bookmarks from "./controllers/bookmarks";
 import * as readerCtrl from "./controllers/reader";
+import * as olCtrl from "./controllers/openlibrary";
 import { csrfProtection } from "./middleware/csrf";
 
 const app = new Hono();
@@ -108,6 +109,12 @@ app.post("/admin/programs/create", (c) => progsCrud.store(c));
 app.get("/admin/programs/:id/edit", (c) => progsCrud.editForm(c));
 app.post("/admin/programs/:id/update", (c) => progsCrud.update(c));
 app.post("/admin/programs/:id/delete", (c) => progsCrud.remove(c));
+
+// OpenLibrary API (public, no auth needed for search)
+app.get("/api/openlibrary/search", (c) => olCtrl.search(c));
+app.get("/api/openlibrary/isbn/:isbn", (c) => olCtrl.byIsbn(c));
+app.get("/api/openlibrary/cover", (c) => olCtrl.coverProxy(c));
+app.post("/api/translate", (c) => olCtrl.translate(c));
 
 // Categories CRUD
 app.get("/admin/categories", (c) => catsCrud.list(c));

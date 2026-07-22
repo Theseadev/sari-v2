@@ -145,7 +145,7 @@ export function bookForm(
 
 	const coverPreview =
 		isEdit && book?.cover_image
-			? `<div style="margin-bottom:12px"><img src="/uploads/covers/${esc(String(book.cover_image))}" style="max-height:120px;border-radius:8px;border:1px solid var(--border)"></div>`
+			? `<div style="margin-bottom:12px"><img id="coverPreview" src="/uploads/covers/${esc(String(book.cover_image))}" style="max-height:120px;border-radius:8px;border:1px solid var(--border)"></div>`
 			: "";
 
 	const body = `
@@ -157,7 +157,10 @@ export function bookForm(
   <form method="POST" action="${action}" enctype="multipart/form-data">
     ${inputField("Judul", "title", book?.title ?? "", { required: true, placeholder: "Judul buku" })}
     ${inputField("Penulis", "author", book?.author ?? "", { required: true, placeholder: "Nama penulis" })}
-    ${textareaField("Sinopsis", "description", book?.description ?? "", { rows: 3 })}
+    <div>
+      ${textareaField("Sinopsis", "description", book?.description ?? "", { rows: 3 })}
+      <button type="button" id="translateDesc" class="btn btn-sm" style="margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border);font-weight:500">🌐 Translate ke Indonesia</button>
+    </div>
 
     ${selectField("Program Studi", "program_id", progOpts, book?.program_id ?? "")}
 
@@ -167,7 +170,13 @@ export function bookForm(
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      ${inputField("ISBN", "isbn", book?.isbn ?? "")}
+      <div>
+        ${inputField("ISBN", "isbn", book?.isbn ?? "", { placeholder: "ISBN untuk auto-fill" })}
+        <button type="button" id="olAutofill" class="btn btn-sm" style="margin-top:6px;background:var(--primary-light);color:var(--primary);border:none;font-weight:600">
+          🔍 Auto-fill dari OpenLibrary
+        </button>
+        <div id="olStatus" style="font-size:0.78rem;margin-top:6px;color:var(--text-dim)"></div>
+      </div>
       ${selectField(
 				"Akses",
 				"access_type",
@@ -184,6 +193,7 @@ export function bookForm(
       <label for="cover">Sampul Buku${isEdit ? " (kosongkan jika tidak ubah)" : ""}</label>
       ${coverPreview}
       <input type="file" id="cover" name="cover" class="form-control" accept="image/*">
+      <input type="hidden" name="downloaded_cover" id="downloadedCover" value="">
     </div>
 
     ${!isEdit ? '<div class="form-group"><label for="pdf_file">File PDF *</label><input type="file" id="pdf_file" name="pdf_file" class="form-control" accept=".pdf" required></div>' : ""}
@@ -193,9 +203,72 @@ export function bookForm(
       <a href="/admin/books" class="btn btn-outline">Batal</a>
     </div>
   </form>
-</div>`;
+</div>
+
+<script>
+document.getElementById('olAutofill')?.addEventListener('click', async function() {
+	const isbn = document.getElementById('isbn')?.value?.replace(/[^0-9X]/gi, '');
+	if (!isbn || isbn.length < 10) {
+		document.getElementById('olStatus').textContent = '⚠️ Masukkan ISBN valid (min. 10 digit)';
+		return;
+	}
+	const status = document.getElementById('olStatus');
+	status.textContent = '⏳ Mencari data buku...';
+	status.style.color = 'var(--text-dim)';
+	try {
+		const res = await fetch('/api/openlibrary/isbn/' + isbn);
+		if (!res.ok) { status.textContent = '❌ Buku tidak ditemukan di OpenLibrary'; status.style.color = 'var(--danger)'; return; }
+		const data = await res.json();
+		document.getElementById('title').value = data.title || '';
+		document.getElementById('author').value = data.author || '';
+		document.getElementById('publisher').value = data.publisher || '';
+		document.getElementById('publication_year').value = data.publication_year || '';
+		document.getElementById('description').value = data.description || '';
+		let statusMsg = '✅ Auto-fill berhasil!';
+		if (data.cover_image) {
+			document.getElementById('downloadedCover').value = data.cover_image;
+			let preview = document.getElementById('coverPreview');
+			if (!preview) {
+				const coverGroup = document.querySelector('.form-group:has(#cover)') || document.getElementById('cover')?.closest('.form-group');
+				if (coverGroup) {
+					const div = document.createElement('div');
+					div.style.cssText = 'margin-bottom:12px';
+					div.innerHTML = '<img id="coverPreview" src="/uploads/covers/' + data.cover_image + '" style="max-height:120px;border-radius:8px;border:1px solid var(--border)">';
+					coverGroup.insertBefore(div, document.getElementById('cover'));
+				}
+			} else {
+				preview.src = '/uploads/covers/' + data.cover_image;
+			}
+			statusMsg += ' Cover terdownload!';
+		} else {
+			statusMsg += ' <a href="/api/openlibrary/cover?isbn=' + isbn + '" target="_blank" style="color:var(--primary)">Lihat cover</a>';
+		}
+		status.innerHTML = statusMsg;
+		status.style.color = '#059669';
+	} catch (e) {
+		status.textContent = '❌ Gagal menghubungi OpenLibrary';
+		status.style.color = 'var(--danger)';
+	}
+});
+
+document.getElementById('translateDesc')?.addEventListener('click', async function() {
+	const ta = document.getElementById('description');
+	if (!ta || !ta.value.trim() || ta.value.length < 10) return;
+	const btn = this; const orig = btn.textContent;
+	btn.textContent = '⏳ Menerjemahkan...'; btn.disabled = true;
+	try {
+		const f = new FormData(); f.set('text', ta.value);
+		const r = await fetch('/api/translate', { method: 'POST', body: f });
+		if (!r.ok) throw Error();
+		const d = await r.json();
+		if (d.result) ta.value = d.result;
+	} catch {}
+	btn.textContent = orig; btn.disabled = false;
+});
+</script>`;
 
 	return adminLayout(title, body, user);
+
 }
 
 // ── Bulk Upload Form ──
