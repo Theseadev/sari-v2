@@ -82,7 +82,7 @@ ${
 		? `
 <div id="authModal" class="modal-overlay">
   <div class="modal-card modal-sm">
-    <button class="modal-close" id="closeAuthModal">&times;</button>
+    <button class="modal-close" id="closeAuthModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     <div class="auth-tabs">
       <button type="button" class="auth-tab active" data-tab="login">Masuk</button>
       <button type="button" class="auth-tab" data-tab="register">Daftar</button>
@@ -167,7 +167,7 @@ ${
 
 <div id="bookmarkModal" class="modal-overlay">
   <div class="modal-card">
-    <button class="modal-close" id="closeBookmarkModal">&times;</button>
+    <button class="modal-close" id="closeBookmarkModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     <h2 style="font-family:var(--font-heading);margin-bottom:16px">🔖 Bookmark Saya</h2>
     <div id="bookmarkModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
   </div>
@@ -175,7 +175,7 @@ ${
 
 <div id="riwayatModal" class="modal-overlay">
   <div class="modal-card">
-    <button class="modal-close" id="closeRiwayatModal">&times;</button>
+    <button class="modal-close" id="closeRiwayatModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     <h2 style="font-family:var(--font-heading);margin-bottom:16px">📖 Riwayat Baca</h2>
     <div id="riwayatModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
   </div>
@@ -183,7 +183,7 @@ ${
 
 <div id="profilModal" class="modal-overlay">
   <div class="modal-card modal-sm">
-    <button class="modal-close" id="closeProfilModal">&times;</button>
+    <button class="modal-close" id="closeProfilModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     <h2 style="font-family:var(--font-heading);margin-bottom:16px">👤 Profil Saya</h2>
     <div id="profilModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
   </div>
@@ -191,7 +191,7 @@ ${
 
 <div id="passwordModal" class="modal-overlay">
   <div class="modal-card modal-sm">
-    <button class="modal-close" id="closePasswordModal">&times;</button>
+    <button class="modal-close" id="closePasswordModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     <h2 style="font-family:var(--font-heading);margin-bottom:16px">🔒 Ganti Password</h2>
     <div id="passwordModalContent" style="min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Memuat...</div>
   </div>

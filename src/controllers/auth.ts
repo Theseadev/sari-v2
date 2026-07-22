@@ -9,7 +9,7 @@ import { APP } from "../config/app";
 import { query, queryOne } from "../config/database";
 import type { JwtPayload } from "../types";
 import { layout, csrfToken } from "../views/html";
-import { getUser, getFlash, setFlashRedirect, esc } from "../helpers";
+import { getUser, getFlash, setFlashRedirect, esc, hasRole } from "../helpers";
 
 // ---- Rate limiting (in-memory, ponytail: simple & works for single-instance) ----
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();

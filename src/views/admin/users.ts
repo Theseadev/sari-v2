@@ -25,7 +25,7 @@ export function userList(
 	let rows = "";
 	if (users.length === 0) {
 		rows =
-			'<tr><td colspan="7" class="text-muted text-center" style="padding:32px">Belum ada user.</td></tr>';
+			'<tr><td colspan="6" class="text-muted text-center" style="padding:32px">Belum ada user.</td></tr>';
 	} else {
 		for (const u of users) {
 			const statusBadge =
@@ -33,7 +33,7 @@ export function userList(
 					? '<span class="badge-sm public">Aktif</span>'
 					: '<span class="badge-sm internal">Nonaktif</span>';
 			rows += `<tr>
-        <td>${u.id}</td>
+        
         <td><strong>${esc(u.name)}</strong><br><small class="text-muted">@${esc(u.username)}</small></td>
         <td>${esc(u.email)}</td>
         <td><span class="badge-sm ${u.role_name === "super_admin" ? "internal" : "public"}">${esc(u.role_name)}</span></td>
@@ -94,7 +94,7 @@ export function userList(
 <div class="admin-card">
   <div class="table-wrap">
   <table class="table">
-    <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </div>

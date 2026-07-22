@@ -22,11 +22,11 @@ export function progList(
 	let rows = "";
 	if (progs.length === 0) {
 		rows =
-			'<tr><td colspan="5" class="text-muted text-center" style="padding:32px">Belum ada program studi.</td></tr>';
+			'<tr><td colspan="4" class="text-muted text-center" style="padding:32px">Belum ada program studi.</td></tr>';
 	} else {
 		for (const p of progs) {
 			rows += `<tr>
-        <td>${p.id}</td>
+        
         <td><strong>${esc(p.name)}</strong></td>
         <td>${esc(p.faculty_name)}</td>
         <td><small class="text-muted">/${esc(p.slug)}</small></td>
@@ -87,7 +87,7 @@ export function progList(
 <div class="admin-card">
   <div class="table-wrap">
   <table class="table">
-    <thead><tr><th>ID</th><th>Nama</th><th>Fakultas</th><th>Slug</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Nama</th><th>Fakultas</th><th>Slug</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </div>

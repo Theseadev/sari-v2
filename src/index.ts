@@ -64,7 +64,6 @@ app.get("/sitemap.xml", (c) => auth.sitemap(c));
 app.get("/", (c) => c.redirect("/buku"));
 app.get("/buku", (c) => books.catalog(c));
 app.get("/buku/:slug", (c) => books.detail(c));
-app.get("/buku/:slug/full", (c) => books.detailPage(c));
 
 // PDF Reader & Proxy
 app.get("/baca/:slug", (c) => books.reader(c));

@@ -31,7 +31,7 @@ export async function logs(c: Context) {
 	let tableRows = "";
 	for (const row of rows) {
 		tableRows += `<tr>
-      <td>${row.id}</td>
+      
       <td>${esc(row.user_name ?? "-")}</td>
       <td>${esc(row.action)}</td>
       <td>${esc(row.description ?? "")}</td>
@@ -85,7 +85,7 @@ export async function logs(c: Context) {
       <h1 style="font-size:1.5rem;margin-bottom:20px">Log Aktivitas</h1>
       <div class="recent-logs admin-card">
         <table class="table">
-          <thead><tr><th>ID</th><th>User</th><th>Aksi</th><th>Deskripsi</th><th>IP</th><th>Waktu</th></tr></thead>
+          <thead><tr><th>User</th><th>Aksi</th><th>Deskripsi</th><th>IP</th><th>Waktu</th></tr></thead>
           <tbody>${tableRows}</tbody>
         </table>
         ${paginationHtml}

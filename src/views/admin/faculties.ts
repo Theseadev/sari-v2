@@ -20,11 +20,10 @@ export function facList(
 	let rows = "";
 	if (facs.length === 0) {
 		rows =
-			'<tr><td colspan="5" class="text-muted text-center" style="padding:32px">Belum ada fakultas.</td></tr>';
+			'<tr><td colspan="4" class="text-muted text-center" style="padding:32px">Belum ada fakultas.</td></tr>';
 	} else {
 		for (const f of facs) {
 			rows += `<tr>
-        <td>${f.id}</td>
         <td><strong>${esc(f.name)}</strong><br><small class="text-muted">/${esc(f.slug)}</small></td>
         <td>${esc(f.description ?? "—")}</td>
         <td>${f.program_count ?? 0}</td>
@@ -46,7 +45,7 @@ export function facList(
 <div class="admin-card">
   <div class="table-wrap">
   <table class="table">
-    <thead><tr><th>ID</th><th>Nama</th><th>Deskripsi</th><th>Jml Prodi</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Nama</th><th>Deskripsi</th><th>Jml Prodi</th><th>Aksi</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </div>
