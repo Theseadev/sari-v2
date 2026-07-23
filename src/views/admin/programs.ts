@@ -17,7 +17,13 @@ export function progList(
 	progs: ProgRow[],
 	user: { name: string; roleName: string },
 	currentPage?: string,
-	pagination?: { page: number; totalPages: number; total: number },
+	pagination?: {
+		page: number;
+		totalPages: number;
+		total: number;
+		search?: string;
+	},
+	isAjax?: boolean,
 ): string {
 	let rows = "";
 	if (progs.length === 0) {
@@ -40,10 +46,13 @@ export function progList(
 		}
 	}
 
+	const search = pagination?.search || "";
+	const searchParam = search ? `&q=${encodeURIComponent(search)}` : "";
+
 	let paginationHtml = "";
 	if (pagination && pagination.totalPages > 1) {
 		const p = pagination;
-		const pageLink = (n: number) => `/admin/programs?page=${n}`;
+		const pageLink = (n: number) => `/admin/programs?page=${n}${searchParam}`;
 		const pages: (number | "...")[] = [];
 		if (p.totalPages <= 7) {
 			for (let i = 1; i <= p.totalPages; i++) pages.push(i);
@@ -79,21 +88,54 @@ export function progList(
   </div>`;
 	}
 
+	const searchBox = `
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input type="text" id="prodiSearch" placeholder="Cari nama atau fakultas..." value="${esc(search)}" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg-card);color:var(--text);outline:none">
+    ${search ? `<a href="/admin/programs" class="btn btn-outline btn-sm">Reset</a>` : ""}
+  </div>`;
+
 	const body = `
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">Kelola Program Studi</h2>
   <a href="/admin/programs/create" class="btn btn-primary btn-sm">+ Tambah</a>
 </div>
+${searchBox}
 <div class="admin-card">
   <div class="table-wrap">
   <table class="table">
     <thead><tr><th>Nama</th><th>Fakultas</th><th>Slug</th><th>Aksi</th></tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody id="prodiTableBody">${rows}</tbody>
   </table>
   </div>
   ${paginationHtml}
-</div>`;
+</div>
+<script>
+(function(){
+  var inp=document.getElementById('prodiSearch'),timer;
+  if(!inp)return;
+  var tbody=document.getElementById('prodiTableBody'),card=document.querySelector('.admin-card');
+  inp.addEventListener('input',function(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      var v=inp.value.trim();
+      var url=v===''?'/admin/programs':'/admin/programs?q='+encodeURIComponent(v);
+      fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.text();}).then(function(html){
+        var d=document.createElement('div');d.innerHTML=html;
+        var nt=d.querySelector('#prodiTableBody');
+        var np=d.querySelector('.admin-pagination');
+        if(nt&&tbody)tbody.innerHTML=nt.innerHTML;
+        var oldp=card&&card.querySelector('.admin-pagination');
+        if(np){if(oldp)oldp.outerHTML=np.outerHTML;else if(card)card.insertAdjacentHTML('beforeend',np.outerHTML);}
+        else if(oldp)oldp.remove();
+        history.replaceState({q:v},'',url);
+      });
+    },150);
+  });
+  window.addEventListener('popstate',function(){location.reload();});
+})();
+</script>`;
 
+	if (isAjax) return body;
 	return adminLayout("Kelola Program Studi", body, user, currentPage);
 }
 

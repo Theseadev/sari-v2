@@ -16,21 +16,43 @@ export async function list(c: Context) {
 	if (!user) return c.redirect("/login");
 	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const flash = getFlash(c);
-	const page = Math.max(1, Number(c.req.query("page")) || 1);
-	const offset = (page - 1) * perPage;
+	const search = (c.req.query("q") || "").trim();
+	const page = search ? 1 : Math.max(1, Number(c.req.query("page")) || 1);
+	const limit = search ? 999 : perPage;
+	const offset = search ? 0 : (page - 1) * perPage;
 
-	const total = await queryOne<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM users");
-	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+	let whereSql = "";
+	const params: (string | number)[] = [];
+	if (search) {
+		whereSql =
+			" WHERE (u.name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.nim_nip LIKE ?)";
+		const term = `%${search}%`;
+		params.push(term, term, term, term);
+	}
+
+	const total = await queryOne<{ cnt: number }>(
+		`SELECT COUNT(*) AS cnt FROM users u${whereSql}`,
+		params,
+	);
+	const totalPages = search ? 1 : Math.ceil((total?.cnt || 0) / perPage);
 
 	const users = await query<any[]>(
 		`SELECT u.id, u.username, u.name, u.email, u.nim_nip, u.status,
           r.name AS role_name, u.last_login, u.created_at
-   FROM users u JOIN roles r ON r.id = u.role_id
+   FROM users u JOIN roles r ON r.id = u.role_id${whereSql}
    ORDER BY u.created_at DESC
-   LIMIT ${perPage} OFFSET ${offset}`,
+   LIMIT ${limit} OFFSET ${offset}`,
+		params,
 	);
+	const isAjax = c.req.header("x-requested-with") === "XMLHttpRequest";
 	return c.html(
-		userList(users, { name: user.name, roleName: user.roleName }, "users", { page, totalPages, total: total?.cnt || 0 }),
+		userList(
+			users,
+			{ name: user.name, roleName: user.roleName },
+			"users",
+			{ page, totalPages, total: total?.cnt || 0, search },
+			isAjax,
+		),
 	);
 }
 
@@ -41,9 +63,7 @@ export async function createForm(c: Context) {
 	const roles = await query<{ id: number; name: string }[]>(
 		"SELECT id, name FROM roles ORDER BY id",
 	);
-	return c.html(
-		userForm({ name: user.name, roleName: user.roleName }, roles),
-	);
+	return c.html(userForm({ name: user.name, roleName: user.roleName }, roles));
 }
 
 // ── Store ──
@@ -110,10 +130,9 @@ export async function editForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
 	const id = Number(c.req.param("id"));
-	const editUser = await queryOne<any>(
-		"SELECT * FROM users WHERE id = ?",
-		[id],
-	);
+	const editUser = await queryOne<any>("SELECT * FROM users WHERE id = ?", [
+		id,
+	]);
 	if (!editUser) {
 		return c.html(
 			errorPage(404, "Tidak Ditemukan", "User tidak ditemukan."),

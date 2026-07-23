@@ -16,6 +16,8 @@ export function facList(
 	facs: FacRow[],
 	user: { name: string; roleName: string },
 	currentPage?: string,
+	search?: string,
+	isAjax?: boolean,
 ): string {
 	let rows = "";
 	if (facs.length === 0) {
@@ -37,20 +39,49 @@ export function facList(
 		}
 	}
 
+	const searchBox = `
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input type="text" id="facSearch" placeholder="Cari nama atau deskripsi..." value="${esc(search || "")}" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg-card);color:var(--text);outline:none">
+    ${search ? `<a href="/admin/faculties" class="btn btn-outline btn-sm">Reset</a>` : ""}
+  </div>`;
+
 	const body = `
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">Kelola Fakultas</h2>
   <a href="/admin/faculties/create" class="btn btn-primary btn-sm">+ Tambah</a>
 </div>
+${searchBox}
 <div class="admin-card">
   <div class="table-wrap">
   <table class="table">
     <thead><tr><th>Nama</th><th>Deskripsi</th><th>Jml Prodi</th><th>Aksi</th></tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody id="facTableBody">${rows}</tbody>
   </table>
   </div>
-</div>`;
+</div>
+<script>
+(function(){
+  var inp=document.getElementById('facSearch'),timer;
+  if(!inp)return;
+  var tbody=document.getElementById('facTableBody'),card=document.querySelector('.admin-card');
+  inp.addEventListener('input',function(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      var v=inp.value.trim();
+      var url=v===''?'/admin/faculties':'/admin/faculties?q='+encodeURIComponent(v);
+      fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.text();}).then(function(html){
+        var d=document.createElement('div');d.innerHTML=html;
+        var nt=d.querySelector('#facTableBody');
+        if(nt&&tbody)tbody.innerHTML=nt.innerHTML;
+        history.replaceState({q:v},'',url);
+      });
+    },150);
+  });
+  window.addEventListener('popstate',function(){location.reload();});
+})();
+</script>`;
 
+	if (isAjax) return body;
 	return adminLayout("Kelola Fakultas", body, user, currentPage);
 }
 

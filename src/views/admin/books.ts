@@ -21,7 +21,15 @@ export function bookList(
 	books: BookRow[],
 	user: { name: string; roleName: string },
 	currentPage?: string,
-	pagination?: { page: number; totalPages: number; total: number },
+	pagination?: {
+		page: number;
+		totalPages: number;
+		total: number;
+		search?: string;
+		access?: string;
+		sort?: string;
+	},
+	isAjax?: boolean,
 ): string {
 	let rows = "";
 	if (books.length === 0) {
@@ -48,10 +56,21 @@ export function bookList(
 		}
 	}
 
+	const search = pagination?.search || "";
+	const access = pagination?.access || "";
+	const sort = pagination?.sort || "newest";
+
+	const searchParam = new URLSearchParams();
+	if (search) searchParam.set("q", search);
+	if (access) searchParam.set("access", access);
+	if (sort && sort !== "newest") searchParam.set("sort", sort);
+	const qs = searchParam.toString();
+	const searchQs = qs ? `&${qs}` : "";
+
 	let paginationHtml = "";
 	if (pagination && pagination.totalPages > 1) {
 		const p = pagination;
-		const pageLink = (n: number) => `/admin/books?page=${n}`;
+		const pageLink = (n: number) => `/admin/books?page=${n}${searchQs}`;
 
 		// Build page numbers with ellipsis
 		const pages: (number | "...")[] = [];
@@ -95,6 +114,22 @@ export function bookList(
 	}
 
 	const body = `
+<style>
+  .filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .filter-bar input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text);outline:none;transition:border-color .2s}
+  .filter-bar input[type=text]:focus{border-color:var(--primary)}
+  .dd{position:relative}
+  .dd-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text);cursor:pointer;white-space:nowrap;transition:all .2s;user-select:none}
+  .dd-btn:hover{border-color:var(--primary);background:var(--primary-light)}
+  .dd.open .dd-btn{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-light)}
+  .dd-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:50;opacity:0;visibility:hidden;transform:translateY(-4px);transition:all .15s}
+  .dd.open .dd-menu{opacity:1;visibility:visible;transform:translateY(0)}
+  .dd-opt{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:0.85rem;color:var(--text);cursor:pointer;transition:background .1s}
+  .dd-opt:first-child{border-radius:8px 8px 0 0}
+  .dd-opt:last-child{border-radius:0 0 8px 8px}
+  .dd-opt:hover{background:var(--primary-light)}
+  .dd-opt.active{color:var(--primary);font-weight:600}
+</style>
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">Kelola Buku</h2>
   <div style="display:flex;gap:8px">
@@ -102,14 +137,99 @@ export function bookList(
     <a href="/admin/books/bulk" class="btn btn-outline btn-sm">📤 Upload Bulk</a>
   </div>
 </div>
+<div class="filter-bar">
+  <input type="text" id="bookSearch" placeholder="Cari judul atau penulis..." value="${esc(search)}">
+  <div class="dd" id="ddAccess">
+    <button type="button" class="dd-btn" id="ddAccessBtn">
+      <span id="ddAccessText">${access === "public" ? "Publik" : access === "internal" ? "Internal" : "Semua Akses"}</span>
+    </button>
+    <div class="dd-menu">
+      <div class="dd-opt${!access ? " active" : ""}" data-val="">Semua Akses</div>
+      <div class="dd-opt${access === "public" ? " active" : ""}" data-val="public">Publik</div>
+      <div class="dd-opt${access === "internal" ? " active" : ""}" data-val="internal">Internal</div>
+    </div>
+    <input type="hidden" id="bookAccess" value="${esc(access)}">
+  </div>
+  <div class="dd" id="ddSort">
+    <button type="button" class="dd-btn" id="ddSortBtn">
+      <span id="ddSortText">${sort === "oldest" ? "Terlama" : "Terbaru"}</span>
+    </button>
+    <div class="dd-menu">
+      <div class="dd-opt${sort !== "oldest" ? " active" : ""}" data-val="newest">Terbaru</div>
+      <div class="dd-opt${sort === "oldest" ? " active" : ""}" data-val="oldest">Terlama</div>
+    </div>
+    <input type="hidden" id="bookSort" value="${esc(sort)}">
+  </div>
+  ${search || access ? `<a href="/admin/books" class="btn btn-outline btn-sm">✕ Reset</a>` : ""}
+</div>
 <div class="admin-card">
   <table class="table">
     <thead><tr><th style="width:50px"></th><th>Judul</th><th>Akses</th><th>Dilihat</th><th>Tanggal</th><th>Aksi</th></tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody id="bookTableBody">${rows}</tbody>
   </table>
   ${paginationHtml}
-</div>`;
+</div>
+<script>
+(function(){
+  var search=document.getElementById('bookSearch'),
+      accessInput=document.getElementById('bookAccess'),
+      sortInput=document.getElementById('bookSort'),
+      timer,tbody=document.getElementById('bookTableBody'),
+      card=document.querySelector('.admin-card');
 
+  // Toggle dropdown
+  document.querySelectorAll('.dd').forEach(function(dd){
+    dd.querySelector('.dd-btn').addEventListener('click',function(e){
+      e.stopPropagation();
+      document.querySelectorAll('.dd').forEach(function(d){if(d!==dd)d.classList.remove('open')});
+      dd.classList.toggle('open');
+    });
+    dd.querySelectorAll('.dd-opt').forEach(function(opt){
+      opt.addEventListener('click',function(){
+        var val=opt.getAttribute('data-val');
+        var hidden=dd.querySelector('input[type=hidden]');
+        hidden.value=val;
+        dd.querySelectorAll('.dd-opt').forEach(function(o){o.classList.remove('active')});
+        opt.classList.add('active');
+        var btnText=dd.querySelector('.dd-btn span');
+        btnText.textContent=opt.textContent.trim();
+        dd.classList.remove('open');
+        doFetch();
+      });
+    });
+  });
+  document.addEventListener('click',function(){document.querySelectorAll('.dd').forEach(function(d){d.classList.remove('open')})});
+
+  function doFetch(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      var q=search.value.trim(),
+          a=accessInput.value,
+          s=sortInput.value,
+          p=new URLSearchParams();
+      if(q)p.set('q',q);
+      if(a)p.set('access',a);
+      if(s&&s!=='newest')p.set('sort',s);
+      var qs=p.toString(),
+          url='/admin/books'+(qs?'?'+qs:'');
+      fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.text();}).then(function(html){
+        var d=document.createElement('div');d.innerHTML=html;
+        var nt=d.querySelector('#bookTableBody');
+        var np=d.querySelector('.admin-pagination');
+        if(nt&&tbody)tbody.innerHTML=nt.innerHTML;
+        var oldp=card&&card.querySelector('.admin-pagination');
+        if(np){if(oldp)oldp.outerHTML=np.outerHTML;else if(card)card.insertAdjacentHTML('beforeend',np.outerHTML);}
+        else if(oldp)oldp.remove();
+        history.replaceState(null,'',url);
+      });
+    },150);
+  }
+  search.addEventListener('input',doFetch);
+  window.addEventListener('popstate',function(){location.reload();});
+})();
+</script>`;
+
+	if (isAjax) return body;
 	return adminLayout("Kelola Buku", body, user, currentPage);
 }
 
@@ -256,7 +376,6 @@ document.getElementById('olAutofill')?.addEventListener('click', async function(
 </script>`;
 
 	return adminLayout(title, body, user);
-
 }
 
 // ── Bulk Upload Form ──

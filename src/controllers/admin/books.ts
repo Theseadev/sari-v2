@@ -17,29 +17,58 @@ const perPage = 5;
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
-	const flash = getFlash(c);
-	const page = Math.max(1, Number(c.req.query("page")) || 1);
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
+	const _flash = getFlash(c);
+	const search = (c.req.query("q") || "").trim();
+	const access = c.req.query("access") || "";
+	const sort = c.req.query("sort") || "newest";
+	const page =
+		search || access ? 1 : Math.max(1, Number(c.req.query("page")) || 1);
+	const limit = search || access ? 999 : perPage;
+	const offset = search || access ? 0 : (page - 1) * perPage;
 
-	const total = await queryOne<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM books");
-	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+	let whereSql = "";
+	const params: (string | number)[] = [];
+	if (search) {
+		whereSql += " WHERE (b.title LIKE ? OR b.author LIKE ?)";
+		const term = `%${search}%`;
+		params.push(term, term);
+	}
+	if (access === "public" || access === "internal") {
+		whereSql += whereSql ? " AND" : " WHERE";
+		whereSql += " b.access_type = ?";
+		params.push(access);
+	}
 
-	const offset = (page - 1) * perPage;
+	const orderSql = sort === "oldest" ? "ASC" : "DESC";
+
+	const total = await queryOne<{ cnt: number }>(
+		`SELECT COUNT(*) AS cnt FROM books b${whereSql}`,
+		params,
+	);
+	const totalPages =
+		search || access ? 1 : Math.ceil((total?.cnt || 0) / perPage);
+
+	const dataParams = [...params];
 	const books = await query<any[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type, b.cover_image,
           b.page_count, b.views, b.created_at,
           pr.name AS program_name
    FROM books b
-   LEFT JOIN programs pr ON pr.id = b.program_id
-   ORDER BY b.created_at DESC
-   LIMIT ${perPage} OFFSET ${offset}`,
+   LEFT JOIN programs pr ON pr.id = b.program_id${whereSql}
+   ORDER BY b.created_at ${orderSql}
+   LIMIT ${limit} OFFSET ${offset}`,
+		dataParams,
 	);
+	const isAjax = c.req.header("x-requested-with") === "XMLHttpRequest";
 	return c.html(
 		bookList(
 			books,
 			{ name: user.name, roleName: user.roleName },
 			"books",
-			{ page, totalPages, total: total?.cnt || 0 },
+			{ page, totalPages, total: total?.cnt || 0, search, access, sort },
+			isAjax,
 		),
 	);
 }
@@ -48,22 +77,22 @@ export async function list(c: Context) {
 export async function createForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const progs = await query<
 		{ id: number; name: string; faculty_name: string }[]
 	>(
 		`SELECT p.id, p.name, f.name AS faculty_name FROM programs p JOIN faculties f ON f.id = p.faculty_id ORDER BY f.name, p.name`,
 	);
-	return c.html(
-		bookForm({ name: user.name, roleName: user.roleName }, progs),
-	);
+	return c.html(bookForm({ name: user.name, roleName: user.roleName }, progs));
 }
 
 // ── Store ──
 export async function store(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const body = await c.req.parseBody();
 
 	const title = String(body.title || "").trim();
@@ -79,7 +108,12 @@ export async function store(c: Context) {
 	// Handle cover upload (file upload OR downloaded from OpenLibrary)
 	let coverPath: string | null = null;
 	const cover = body.cover;
-	if (cover && typeof cover === "object" && "arrayBuffer" in cover && (cover as any).size > 0) {
+	if (
+		cover &&
+		typeof cover === "object" &&
+		"arrayBuffer" in cover &&
+		(cover as any).size > 0
+	) {
 		const buf = Buffer.from(await cover.arrayBuffer());
 		const ext = cover.name.split(".").pop() || "jpg";
 		const filename = `${slug}-${Date.now()}.${ext}`;
@@ -157,7 +191,8 @@ export async function store(c: Context) {
 export async function editForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const book = await queryOne<any>("SELECT * FROM books WHERE id = ?", [id]);
 	if (!book) {
@@ -180,7 +215,8 @@ export async function editForm(c: Context) {
 export async function update(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const body = await c.req.parseBody();
 
@@ -202,11 +238,14 @@ export async function update(c: Context) {
 	// Handle cover upload (file upload OR downloaded from OpenLibrary)
 	let coverPath = existing.cover_image;
 	const cover = body.cover;
-	if (cover && typeof cover === "object" && "arrayBuffer" in cover && (cover as any).size > 0) {
+	if (
+		cover &&
+		typeof cover === "object" &&
+		"arrayBuffer" in cover &&
+		(cover as any).size > 0
+	) {
 		if (existing.cover_image) {
-			await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(
-				() => {},
-			);
+			await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(() => {});
 		}
 		const ext = cover.name.split(".").pop() || "jpg";
 		const filename = `${existing.slug}-${Date.now()}.${ext}`;
@@ -223,7 +262,9 @@ export async function update(c: Context) {
 			if (existsSync(join(APP.COVER_PATH, dl))) {
 				// Hapus cover lama kalo beda
 				if (existing.cover_image && existing.cover_image !== dl) {
-					await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(() => {});
+					await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(
+						() => {},
+					);
 				}
 				coverPath = dl;
 			}
@@ -266,7 +307,8 @@ export async function update(c: Context) {
 export async function remove(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
 	const book = await queryOne<any>("SELECT * FROM books WHERE id = ?", [id]);
 	if (!book) {
@@ -301,33 +343,34 @@ export async function remove(c: Context) {
 export async function bulkTemplate(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 
 	const wb = XLSX.utils.book_new();
 	const data = [
 		{
-			"Judul": "Buku Ajar Matematika",
-			"Penulis": "Dr. Budi Santoso",
-			"Sinopsis": "Buku ajar matematika untuk mahasiswa S1",
-			"Penerbit": "Erlangga",
-			"Tahun": 2024,
-			"ISBN": "978-602-xxx-xxx-1",
+			Judul: "Buku Ajar Matematika",
+			Penulis: "Dr. Budi Santoso",
+			Sinopsis: "Buku ajar matematika untuk mahasiswa S1",
+			Penerbit: "Erlangga",
+			Tahun: 2024,
+			ISBN: "978-602-xxx-xxx-1",
 			"Program Studi": "Teknik Informatika",
-			"Akses": "public",
+			Akses: "public",
 			"File PDF": "matematika.pdf",
-			"Cover": "matematika.jpg",
+			Cover: "matematika.jpg",
 		},
 		{
-			"Judul": "Tesis Analisis Data",
-			"Penulis": "Siti Aminah",
-			"Sinopsis": "Tesis analisis data statistik",
-			"Penerbit": "",
-			"Tahun": 2023,
-			"ISBN": "",
+			Judul: "Tesis Analisis Data",
+			Penulis: "Siti Aminah",
+			Sinopsis: "Tesis analisis data statistik",
+			Penerbit: "",
+			Tahun: 2023,
+			ISBN: "",
 			"Program Studi": "",
-			"Akses": "internal",
+			Akses: "internal",
 			"File PDF": "tesis-siti.pdf",
-			"Cover": "",
+			Cover: "",
 		},
 	];
 
@@ -339,7 +382,7 @@ export async function bulkTemplate(c: Context) {
 		{ wch: 25 }, // Penulis
 		{ wch: 40 }, // Sinopsis
 		{ wch: 20 }, // Penerbit
-		{ wch: 8 },  // Tahun
+		{ wch: 8 }, // Tahun
 		{ wch: 20 }, // ISBN
 		{ wch: 25 }, // Program Studi
 		{ wch: 10 }, // Akses
@@ -352,7 +395,8 @@ export async function bulkTemplate(c: Context) {
 
 	return new Response(buf, {
 		headers: {
-			"Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			"Content-Type":
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 			"Content-Disposition": 'attachment; filename="format-upload-buku.xlsx"',
 		},
 	});
@@ -362,7 +406,8 @@ export async function bulkTemplate(c: Context) {
 export async function bulkForm(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 
 	const progs = await query<
 		{ id: number; name: string; faculty_name: string }[]
@@ -378,14 +423,19 @@ export async function bulkForm(c: Context) {
 export async function bulkStore(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/buku");
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/buku");
 
 	const formData = await c.req.formData();
 	const programId = Number(formData.get("program_id")) || null;
 
 	// Parse Excel file
 	const excelFile = formData.get("excel_file");
-	if (!excelFile || typeof excelFile !== "object" || !("arrayBuffer" in excelFile)) {
+	if (
+		!excelFile ||
+		typeof excelFile !== "object" ||
+		!("arrayBuffer" in excelFile)
+	) {
 		setFlash(c, "Upload file Excel (.xlsx).", "danger");
 		return c.redirect("/admin/books/bulk");
 	}
@@ -431,14 +481,24 @@ export async function bulkStore(c: Context) {
 
 	for (const row of rows) {
 		const title = String(row["Judul"] || row["judul"] || "").trim();
-		const author = String(row["Penulis"] || row["penulis"] || "Penulis Unknown").trim();
-		const description = String(row["Sinopsis"] || row["sinopsis"] || "").trim() || null;
+		const author = String(
+			row["Penulis"] || row["penulis"] || "Penulis Unknown",
+		).trim();
+		const description =
+			String(row["Sinopsis"] || row["sinopsis"] || "").trim() || null;
 		const pub = String(row["Penerbit"] || row["penerbit"] || "").trim() || null;
-		const year = row["Tahun"] || row["tahun"] ? Number(row["Tahun"] || row["tahun"]) : null;
+		const year =
+			row["Tahun"] || row["tahun"]
+				? Number(row["Tahun"] || row["tahun"])
+				: null;
 		const isbn = String(row["ISBN"] || row["isbn"] || "").trim() || null;
 		const access = String(row["Akses"] || row["akses"] || "public").trim();
-		const prodiName = String(row["Program Studi"] || row["program studi"] || "").trim();
-		const pdfName = String(row["File PDF"] || row["file pdf"] || row["File_PDF"] || "").trim();
+		const prodiName = String(
+			row["Program Studi"] || row["program studi"] || "",
+		).trim();
+		const pdfName = String(
+			row["File PDF"] || row["file pdf"] || row["File_PDF"] || "",
+		).trim();
 		const coverName = String(row["Cover"] || row["cover"] || "").trim();
 
 		if (!title || !pdfName) {
@@ -449,7 +509,11 @@ export async function bulkStore(c: Context) {
 		pdfName.replace(/\.pdf$/i, "");
 
 		const pdfFile = pdfMap.get(pdfName) || pdfMap.get(pdfName + ".pdf");
-		if (!pdfFile || typeof pdfFile !== "object" || !("arrayBuffer" in pdfFile)) {
+		if (
+			!pdfFile ||
+			typeof pdfFile !== "object" ||
+			!("arrayBuffer" in pdfFile)
+		) {
 			failCount++;
 			continue;
 		}
@@ -466,7 +530,11 @@ export async function bulkStore(c: Context) {
 			let coverPath: string | null = null;
 			if (coverName) {
 				const coverFile = coverMap.get(coverName);
-				if (coverFile && typeof coverFile === "object" && "arrayBuffer" in coverFile) {
+				if (
+					coverFile &&
+					typeof coverFile === "object" &&
+					"arrayBuffer" in coverFile
+				) {
 					const ext = coverName.split(".").pop() || "jpg";
 					const buf = Buffer.from(await coverFile.arrayBuffer());
 					const filename = `${slug}-cover.${ext}`;
@@ -478,7 +546,9 @@ export async function bulkStore(c: Context) {
 			const pageCount = Math.max(1, Math.round(pdfBuf.length / 100_000));
 
 			// Resolve program_id from Excel or fallback to default
-			const rowProgramId = prodiName ? (progMap.get(prodiName.toLowerCase()) || programId) : programId;
+			const rowProgramId = prodiName
+				? progMap.get(prodiName.toLowerCase()) || programId
+				: programId;
 
 			await query(
 				`INSERT INTO books (program_id, uploaded_by, title, slug, author,
@@ -521,9 +591,10 @@ export async function bulkStore(c: Context) {
 		);
 	}
 
-	const msg = failCount > 0
-		? `${successCount} buku berhasil, ${failCount} gagal.`
-		: `${successCount} buku berhasil diupload.`;
+	const msg =
+		failCount > 0
+			? `${successCount} buku berhasil, ${failCount} gagal.`
+			: `${successCount} buku berhasil diupload.`;
 	setFlash(c, msg, successCount > 0 ? "success" : "danger");
 	return c.redirect("/admin/books");
 }

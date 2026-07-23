@@ -16,26 +16,47 @@ export async function list(c: Context) {
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
 		return c.redirect("/admin");
 	const flash = getFlash(c);
-	const page = Math.max(1, Number(c.req.query("page")) || 1);
-	const offset = (page - 1) * perPage;
+	const search = (c.req.query("q") || "").trim();
+	// Saat ada pencarian, tampilkan semua hasil di satu halaman dan nonaktifkan pagination
+	const page = search ? 1 : Math.max(1, Number(c.req.query("page")) || 1);
+	const limit = search ? 999 : perPage;
+	const offset = search ? 0 : (page - 1) * perPage;
+
+	let whereSql = "";
+	const params: (string | number)[] = [];
+	if (search) {
+		whereSql = " WHERE (p.name LIKE ? OR f.name LIKE ?)";
+		const term = `%${search}%`;
+		params.push(term, term);
+	}
 
 	const total = await queryOne<{ cnt: number }>(
-		"SELECT COUNT(*) AS cnt FROM programs",
+		`SELECT COUNT(*) AS cnt FROM programs p JOIN faculties f ON f.id = p.faculty_id${whereSql}`,
+		params,
 	);
-	const totalPages = Math.ceil((total?.cnt || 0) / perPage);
+	const totalPages = search ? 1 : Math.ceil((total?.cnt || 0) / perPage);
 
 	const progs = await query<any[]>(
 		`SELECT p.*, f.name AS faculty_name
-   FROM programs p JOIN faculties f ON f.id = p.faculty_id
+   FROM programs p JOIN faculties f ON f.id = p.faculty_id${whereSql}
    ORDER BY f.name, p.name
-   LIMIT ${perPage} OFFSET ${offset}`,
+   LIMIT ${limit} OFFSET ${offset}`,
+		params,
 	);
+	const isAjax = c.req.header("x-requested-with") === "XMLHttpRequest";
 	return c.html(
-		progList(progs, { name: user.name, roleName: user.roleName }, "programs", {
-			page,
-			totalPages,
-			total: total?.cnt || 0,
-		}),
+		progList(
+			progs,
+			{ name: user.name, roleName: user.roleName },
+			"programs",
+			{
+				page,
+				totalPages,
+				total: total?.cnt || 0,
+				search,
+			},
+			isAjax,
+		),
 	);
 }
 

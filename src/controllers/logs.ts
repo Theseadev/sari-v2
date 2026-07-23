@@ -12,58 +12,56 @@ export async function logs(c: Context) {
 	if (user.roleName !== "super_admin") return c.redirect("/admin");
 	const _flash = getFlash(c);
 	const perPage = 5;
-	const page = Math.max(1, Number(c.req.query("page")) || 1);
 	const search = (c.req.query("q") || "").trim();
-	const offset = (page - 1) * perPage;
+	const page = search ? 1 : Math.max(1, Number(c.req.query("page")) || 1);
+	const limit = search ? 999 : perPage;
+	const offset = search ? 0 : (page - 1) * perPage;
 
-	// Build WHERE clause + params for each query (separate arrays to avoid
-	// mysql2 prepared-statement cache issues with shared mutable params)
-	let whereClause = "";
-	const countParams: (string | number)[] = [];
-	const dataParams: (string | number)[] = [];
+	let whereSql = "";
+	const params: (string | number)[] = [];
 	if (search) {
-		whereClause = ` WHERE u.name LIKE ? OR al.action LIKE ? OR al.description LIKE ? OR al.ip_address LIKE ?`;
+		whereSql = ` WHERE u.name LIKE ? OR al.action LIKE ? OR al.description LIKE ? OR al.ip_address LIKE ?`;
 		const term = `%${search}%`;
-		countParams.push(term, term, term, term);
-		dataParams.push(term, term, term, term);
+		params.push(term, term, term, term);
 	}
 
-	// Total count (queryRaw avoids prepared-statement + LIKE issues in mysql2 v3)
 	const countRows = await queryRaw<{ cnt: number }[]>(
-		`SELECT COUNT(*) AS cnt FROM activity_logs al LEFT JOIN users u ON u.id = al.user_id${whereClause}`,
-		countParams,
+		`SELECT COUNT(*) AS cnt FROM activity_logs al LEFT JOIN users u ON u.id = al.user_id${whereSql}`,
+		params,
 	);
 	const total = countRows[0]?.cnt ?? 0;
-	const totalPages = Math.ceil(total / perPage);
+	const totalPages = search ? 1 : Math.ceil(total / perPage);
 
-	// Fetch rows
-	dataParams.push(perPage, offset);
+	const dataParams = [...params];
 	const rows = await queryRaw<ActivityLog[]>(
 		`SELECT al.*, u.name AS user_name
-     FROM activity_logs al LEFT JOIN users u ON u.id = al.user_id${whereClause}
+     FROM activity_logs al LEFT JOIN users u ON u.id = al.user_id${whereSql}
      ORDER BY al.created_at DESC
-     LIMIT ? OFFSET ?`,
+     LIMIT ${limit} OFFSET ${offset}`,
 		dataParams,
 	);
 
 	let tableRows = "";
-	for (const row of rows) {
-		tableRows += `<tr>
-      
-      <td>${esc(row.user_name ?? "-")}</td>
-      <td>${esc(row.action)}</td>
-      <td>${esc(row.description ?? "")}</td>
-      <td>${esc(row.ip_address ?? "-")}</td>
-      <td>${row.created_at}</td>
-    </tr>`;
+	if (rows.length === 0) {
+		tableRows =
+			'<tr><td colspan="5" class="text-muted text-center" style="padding:32px">Belum ada log aktivitas.</td></tr>';
+	} else {
+		for (const row of rows) {
+			tableRows += `<tr>
+        <td><strong>${esc(row.user_name ?? "-")}</strong></td>
+        <td><span class="badge-sm public">${esc(row.action)}</span></td>
+        <td>${esc(row.description ?? "")}</td>
+        <td><small class="text-muted">${esc(row.ip_address ?? "-")}</small></td>
+        <td><small>${row.created_at}</small></td>
+      </tr>`;
+		}
 	}
 
-	// Pagination
+	const searchParam = search ? `&q=${encodeURIComponent(search)}` : "";
+
 	let paginationHtml = "";
 	if (totalPages > 1) {
-		const qs = (n: number) =>
-			search ? `?q=${encodeURIComponent(search)}&page=${n}` : `?page=${n}`;
-		const pageLink = (n: number) => `/admin/logs${qs(n)}`;
+		const pageLink = (n: number) => `/admin/logs?page=${n}${searchParam}`;
 		const pages: (number | "...")[] = [];
 		if (totalPages <= 7) {
 			for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -98,27 +96,54 @@ export async function logs(c: Context) {
   </div>`;
 	}
 
-	const body = `
-  <div class="admin-page">
-    <div class="container">
-      <div class="breadcrumb"><a href="/admin">Dashboard</a> <span>/</span> <span>Log Aktivitas</span></div>
-      <h1 style="font-size:1.5rem;margin-bottom:20px">Log Aktivitas</h1>
-      <form method="GET" style="margin-bottom:20px;display:flex;gap:8px">
-        <input type="text" name="q" placeholder="Cari user, aksi, deskripsi, IP..." value="${esc(search)}" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;min-width:300px;background:var(--bg);color:var(--text)">
-        <button type="submit" class="btn btn-primary btn-sm">Cari</button>
-        ${search ? `<a href="/admin/logs" class="btn btn-outline btn-sm">Reset</a>` : ""}
-      </form>
-      <div class="recent-logs admin-card">
-        <table class="table">
-          <thead><tr><th>User</th><th>Aksi</th><th>Deskripsi</th><th>IP</th><th>Waktu</th></tr></thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-        ${paginationHtml}
-      </div>
-      <a href="/admin" class="btn btn-outline mt-2">← Kembali</a>
-    </div>
+	const searchBox = `
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input type="text" id="logSearch" placeholder="Cari user, aksi, deskripsi, atau IP..." value="${esc(search)}" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg-card);color:var(--text);outline:none">
+    ${search ? `<a href="/admin/logs" class="btn btn-outline btn-sm">Reset</a>` : ""}
   </div>`;
 
+	const body = `
+<div class="admin-toolbar">
+  <h2 style="font-family:var(--font-heading);font-size:1.2rem">Log Aktivitas</h2>
+</div>
+${searchBox}
+<div class="admin-card">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>User</th><th>Aksi</th><th>Deskripsi</th><th>IP</th><th>Waktu</th></tr></thead>
+    <tbody id="logTableBody">${tableRows}</tbody>
+  </table>
+  </div>
+  ${paginationHtml}
+</div>
+<script>
+(function(){
+  var inp=document.getElementById('logSearch'),timer;
+  if(!inp)return;
+  var tbody=document.getElementById('logTableBody'),card=document.querySelector('.admin-card');
+  inp.addEventListener('input',function(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      var v=inp.value.trim();
+      var url=v===''?'/admin/logs':'/admin/logs?q='+encodeURIComponent(v);
+      fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.text();}).then(function(html){
+        var d=document.createElement('div');d.innerHTML=html;
+        var nt=d.querySelector('#logTableBody');
+        var np=d.querySelector('.admin-pagination');
+        if(nt&&tbody)tbody.innerHTML=nt.innerHTML;
+        var oldp=card&&card.querySelector('.admin-pagination');
+        if(np){if(oldp)oldp.outerHTML=np.outerHTML;else if(card)card.insertAdjacentHTML('beforeend',np.outerHTML);}
+        else if(oldp)oldp.remove();
+        history.replaceState({q:v},'',url);
+      });
+    },150);
+  });
+  window.addEventListener('popstate',function(){location.reload();});
+})();
+</script>`;
+
+	const isAjax = c.req.header("x-requested-with") === "XMLHttpRequest";
+	if (isAjax) return c.html(body);
 	return c.html(
 		adminLayout(
 			"Log Aktivitas",

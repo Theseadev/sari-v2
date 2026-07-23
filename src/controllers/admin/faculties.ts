@@ -11,14 +11,33 @@ import { getFlash, setFlash } from "../flash";
 export async function list(c: Context) {
 	const user = getUser(c);
 	if (!user) return c.redirect("/login");
-	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName)) return c.redirect("/admin");
-	const flash = getFlash(c);
+	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
+		return c.redirect("/admin");
+	const _flash = getFlash(c);
+	const search = (c.req.query("q") || "").trim();
+
+	let whereSql = "";
+	const params: (string | number)[] = [];
+	if (search) {
+		whereSql = " WHERE f.name LIKE ? OR f.description LIKE ?";
+		const term = `%${search}%`;
+		params.push(term, term);
+	}
+
 	const facs = await query<any[]>(
 		`SELECT f.*, (SELECT COUNT(*) FROM programs p WHERE p.faculty_id = f.id) AS program_count
-   FROM faculties f ORDER BY f.name`,
+   FROM faculties f${whereSql} ORDER BY f.name`,
+		params,
 	);
+	const isAjax = c.req.header("x-requested-with") === "XMLHttpRequest";
 	return c.html(
-		facList(facs, { name: user.name, roleName: user.roleName }, "faculties"),
+		facList(
+			facs,
+			{ name: user.name, roleName: user.roleName },
+			"faculties",
+			search,
+			isAjax,
+		),
 	);
 }
 
@@ -91,10 +110,12 @@ export async function update(c: Context) {
 
 	const slug = makeSlug(name);
 
-	await query(
-		"UPDATE faculties SET name=?, slug=?, description=? WHERE id=?",
-		[name, slug, body.description || null, id],
-	);
+	await query("UPDATE faculties SET name=?, slug=?, description=? WHERE id=?", [
+		name,
+		slug,
+		body.description || null,
+		id,
+	]);
 
 	setFlash(c, `Fakultas "${name}" berhasil diupdate.`, "success");
 	return c.redirect("/admin/faculties");
