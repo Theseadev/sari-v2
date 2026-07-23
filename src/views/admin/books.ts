@@ -159,7 +159,6 @@ export function bookForm(
     ${inputField("Penulis", "author", book?.author ?? "", { required: true, placeholder: "Nama penulis" })}
     <div>
       ${textareaField("Sinopsis", "description", book?.description ?? "", { rows: 3 })}
-      <button type="button" id="translateDesc" class="btn btn-sm" style="margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border);font-weight:500">🌐 Translate ke Indonesia</button>
     </div>
 
     ${selectField("Program Studi", "program_id", progOpts, book?.program_id ?? "")}
@@ -170,11 +169,14 @@ export function bookForm(
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div>
-        ${inputField("ISBN", "isbn", book?.isbn ?? "", { placeholder: "ISBN untuk auto-fill" })}
-        <button type="button" id="olAutofill" class="btn btn-sm" style="margin-top:6px;background:var(--primary-light);color:var(--primary);border:none;font-weight:600">
-          🔍 Auto-fill dari OpenLibrary
-        </button>
+      <div class="form-group" style="position:relative">
+        <label for="isbn">ISBN</label>
+        <div style="position:relative">
+          <input type="text" id="isbn" name="isbn" class="form-control" value="${esc(String(book?.isbn ?? ""))}" placeholder="ISBN untuk auto-fill" style="padding-right:44px">
+          <button type="button" id="olAutofill" class="btn btn-sm" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg);color:var(--text-dim);border:1px solid var(--border-light);border-radius:8px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='var(--primary-light)';this.style.color='var(--primary)';this.style.borderColor='var(--primary)'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text-dim)';this.style.borderColor='var(--border-light)'" title="Auto-fill dari OpenLibrary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
         <div id="olStatus" style="font-size:0.78rem;margin-top:6px;color:var(--text-dim)"></div>
       </div>
       ${selectField(
@@ -251,20 +253,6 @@ document.getElementById('olAutofill')?.addEventListener('click', async function(
 	}
 });
 
-document.getElementById('translateDesc')?.addEventListener('click', async function() {
-	const ta = document.getElementById('description');
-	if (!ta || !ta.value.trim() || ta.value.length < 10) return;
-	const btn = this; const orig = btn.textContent;
-	btn.textContent = '⏳ Menerjemahkan...'; btn.disabled = true;
-	try {
-		const f = new FormData(); f.set('text', ta.value);
-		const r = await fetch('/api/translate', { method: 'POST', body: f });
-		if (!r.ok) throw Error();
-		const d = await r.json();
-		if (d.result) ta.value = d.result;
-	} catch {}
-	btn.textContent = orig; btn.disabled = false;
-});
 </script>`;
 
 	return adminLayout(title, body, user);
