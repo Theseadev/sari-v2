@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		if (filterParams.program) qs.set("program", filterParams.program);
 		const query = qs.toString() ? "?" + qs.toString() : "";
 
-		fetch("/buku/" + slug + query)
+		fetch("/buku/" + slug + query, { headers: { "X-Requested-With": "XMLHttpRequest" } })
 			.then((r) => r.text())
 			.then((html) => {
 				closeBookModal();
@@ -145,6 +145,9 @@ document.addEventListener("DOMContentLoaded", function () {
 	document.body.addEventListener("click", function (e) {
 		const card = e.target.closest(".book-card");
 		if (!card) return;
+
+		// Don't intercept form submissions or clicks inside forms
+		if (e.target.closest("form")) return;
 
 		e.preventDefault();
 		const slug = card.dataset.bookSlug;
