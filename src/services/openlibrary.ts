@@ -4,6 +4,18 @@
 const BASE = "https://openlibrary.org";
 const COVERS = "https://covers.openlibrary.org/b";
 
+/** Convert plain text with newlines to double-newline paragraphs for textarea */
+function formatDescription(text: string): string {
+	return text
+		.trim()
+		.replace(/\(penutup (depan|belakang)\)/gi, "")
+		.split(/\r?\n/)
+		.filter((p) => p.trim())
+		.map((p) => p.trim())
+		.join("\n\n");
+}
+
+
 export interface OLSearchResult {
 	title: string;
 	author_name?: string[];
@@ -64,7 +76,7 @@ export async function getByIsbn(isbn: string): Promise<OLBookData | null> {
 	const book = data[key];
 	if (!book) return null;
 
-	// Try to get description from works API
+	// Try to get description from works API using book key
 	let description = "";
 	if (book.key) {
 		try {
@@ -72,9 +84,30 @@ export async function getByIsbn(isbn: string): Promise<OLBookData | null> {
 			if (wRes.ok) {
 				const wData = await wRes.json();
 				if (typeof wData.description === "string") {
-					description = wData.description.slice(0, 2000);
+					description = formatDescription(wData.description.slice(0, 2000));
 				} else if (wData.description?.value) {
-					description = wData.description.value.slice(0, 2000);
+					description = formatDescription(wData.description.value.slice(0, 2000));
+				}
+			}
+		} catch {}
+	}
+
+	// Fallback: try works API directly from ISBN search
+	if (!description) {
+		try {
+			const searchRes = await fetch(`${BASE}/search.json?q=isbn:${isbn}&limit=1`);
+			if (searchRes.ok) {
+				const searchData = await searchRes.json();
+				if (searchData.docs?.[0]?.key) {
+					const wRes = await fetch(`${BASE}${searchData.docs[0].key}.json`);
+					if (wRes.ok) {
+						const wData = await wRes.json();
+						if (typeof wData.description === "string") {
+							description = formatDescription(wData.description.slice(0, 2000));
+						} else if (wData.description?.value) {
+							description = formatDescription(wData.description.value.slice(0, 2000));
+						}
+					}
 				}
 			}
 		} catch {}
@@ -87,7 +120,7 @@ export async function getByIsbn(isbn: string): Promise<OLBookData | null> {
 		title: book.title || "",
 		author: book.authors?.map((a: any) => a.name).join(", ") || "",
 		publisher: book.publishers?.map((p: any) => p.name).join(", ") || "",
-		publication_year: book.publish_date ? parseInt(book.publish_date) : 0,
+		publication_year: book.publish_date ? parseInt(book.publish_date, 10) : 0,
 		isbn,
 		description,
 		cover_id: book.cover?.id || null,
