@@ -626,7 +626,7 @@ function getCatalogStyles(): string {
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 11px 22px;
+            padding: 30px 50px;
             border-radius: 10px;
             font-weight: 600;
             font-size: 0.9rem;
@@ -1005,7 +1005,7 @@ export async function catalog(c: Context) {
         <section class="hero-catalog">
             <div class="container">
                 <h1>${search ? `Hasil untuk: "${esc(search)}"` : "Katalog Perpustakaan Digital"}</h1>
-                <p>Jelajahi ribuan literatur, jurnal, dan buku di Universitas Sari Mulia</p>
+                <p>Temukan ribuan koleksi buku berkualitas tinggi dari berbagai disiplin ilmu untuk menunjang perkuliahan dan memperluas wawasan Anda di Universitas Sari Mulia</p>
                 
                 <form method="GET" action="/buku" class="filter-form">
                     <div class="search-box">
