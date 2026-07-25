@@ -8,7 +8,7 @@ import { z } from "zod";
 import { APP } from "../config/app";
 import { query, queryOne } from "../config/database";
 import type { JwtPayload } from "../types";
-import { layout, csrfToken } from "../views/html";
+import { layout, sariadminLayout, csrfToken } from "../views/html";
 import { getUser, getFlash, setFlashRedirect, esc, hasRole } from "../helpers";
 
 // ---- Rate limiting (in-memory, ponytail: simple & works for single-instance) ----
@@ -242,26 +242,65 @@ export async function adminLoginForm(c: Context) {
 	if (user) return c.redirect("/admin/books");
 	const flash = getFlash(c);
 
-	const html = layout(
+	const html = sariadminLayout(
 		"Admin Login",
 		`
-<div class="auth-page">
-  <div class="auth-card">
-    <h1>🔒 Admin Panel</h1>
-    <form method="POST" action="/sariadmin">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn btn-primary btn-block">Masuk</button>
-    </form>
+<div class="sa-form-header">
+  <h2>Masuk ke Admin</h2>
+  <p>Silakan masukkan kredensial Anda</p>
+</div>
+
+<form method="POST" action="/sariadmin">
+  <div class="sa-field">
+    <label for="email">Email</label>
+    <div class="sa-input-wrap">
+      <span class="sa-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      </span>
+      <input type="email" id="email" name="email" class="sa-input" required autocomplete="email" placeholder="nama@universitas.ac.id">
+    </div>
   </div>
-</div>`,
-		null,
+
+  <div class="sa-field">
+    <label for="password">Password</label>
+    <div class="sa-input-wrap">
+      <span class="sa-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </span>
+      <input type="password" id="password" name="password" class="sa-input" required autocomplete="current-password" placeholder="Masukkan password">
+      <button type="button" id="togglePassword" class="sa-pw-toggle" aria-label="Tampilkan Password">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <button type="submit" class="sa-submit">
+    <span>Masuk</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </button>
+</form>
+
+<a href="/buku" class="sa-back">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+  <span>Kembali ke Katalog</span>
+</a>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('togglePassword');
+  const inp = document.getElementById('password');
+  if (btn && inp) {
+    btn.addEventListener('click', () => {
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.querySelector('.eye-open').style.display = show ? 'none' : '';
+      btn.querySelector('.eye-closed').style.display = show ? '' : 'none';
+    });
+  }
+});
+</script>
+`,
 		flash,
 	);
 

@@ -202,6 +202,399 @@ ${
 </html>`;
 }
 
+/**
+ * Light-mode layout for /sariadmin (admin login) — no navbar, no theme toggle, light background.
+ */
+export function sariadminLayout(
+	title: string,
+	body: string,
+	flash?: { type: string; message: string } | null,
+): string {
+	const flashHtml = flash?.message
+		? `<meta name="flash-type" content="${esc(flash.type)}"><meta name="flash-msg" content="${esc(flash.message)}">`
+		: "";
+
+	const description =
+		"Admin Login - Perpustakaan Digital Universitas Sari Mulia Banjarmasin";
+	const ogImage = "/assets/images/og-default.jpg";
+
+	return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:image" content="${esc(ogImage)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${esc(APP.NAME)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(ogImage)}">
+<link rel="stylesheet" href="/assets/css/style.css?v=4">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta name="csrf-token" content="${esc(csrfToken())}">
+<style>
+/* Force light mode for sariadmin */
+:root {
+	--bg: #f5f7fa;
+	--bg-card: #ffffff;
+	--bg-elevated: #f0f4f8;
+	--bg-warm: #e6edf4;
+	--border: #c8d6e0;
+	--border-light: #dce6ee;
+	--text: #2c3e4f;
+	--text-muted: #647585;
+	--text-dim: #94a4b5;
+	--text-heading: #1a2a38;
+	--primary: #7ba7c9;
+	--primary-dark: #5d8dae;
+	--primary-light: #e8f0f7;
+	--primary-glow: rgba(123, 167, 201, 0.12);
+	--success: #5a8f7a;
+	--danger: #c97a72;
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+	--shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.07);
+	--shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.08);
+}
+/* Reset & Base */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body.sariadmin-body {
+	height: 100%;
+	overflow: hidden;
+}
+.sariadmin-body {
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background: #f0f2f5;
+	color: #1a1a2e;
+}
+
+/* Split Layout */
+.sa-split {
+	display: flex;
+	height: 100vh;
+	overflow: hidden;
+}
+.sa-left {
+	flex: 1;
+	background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 48px;
+	position: relative;
+	overflow: hidden;
+}
+.sa-left::before {
+	content: '';
+	position: absolute;
+	top: -30%;
+	left: -20%;
+	width: 500px;
+	height: 500px;
+	background: radial-gradient(circle, rgba(99,162,255,0.15) 0%, transparent 70%);
+	border-radius: 50%;
+}
+.sa-left::after {
+	content: '';
+	position: absolute;
+	bottom: -20%;
+	right: -10%;
+	width: 400px;
+	height: 400px;
+	background: radial-gradient(circle, rgba(99,162,255,0.1) 0%, transparent 70%);
+	border-radius: 50%;
+}
+.sa-brand {
+	position: relative;
+	z-index: 2;
+}
+.sa-brand-logo {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 32px;
+}
+.sa-brand-icon {
+	width: 44px;
+	height: 44px;
+	background: rgba(255,255,255,0.12);
+	border: 1px solid rgba(255,255,255,0.15);
+	border-radius: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(10px);
+}
+.sa-brand-icon svg { color: #fff; }
+.sa-brand-name {
+	font-size: 1.5rem;
+	font-weight: 800;
+	color: #fff;
+	letter-spacing: -0.5px;
+}
+.sa-hero-title {
+	font-size: 1.9rem;
+	font-weight: 800;
+	color: #fff;
+	line-height: 1.2;
+	letter-spacing: -0.8px;
+	margin-bottom: 12px;
+}
+.sa-hero-desc {
+	font-size: 0.92rem;
+	color: rgba(255,255,255,0.6);
+	line-height: 1.5;
+	max-width: 400px;
+	margin-bottom: 32px;
+}
+.sa-features {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+.sa-feature {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+}
+.sa-feature-icon {
+	width: 36px;
+	height: 36px;
+	min-width: 36px;
+	background: rgba(99,162,255,0.12);
+	border: 1px solid rgba(99,162,255,0.2);
+	border-radius: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #63a2ff;
+}
+.sa-feature-text h4 {
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: #fff;
+	margin-bottom: 2px;
+}
+.sa-feature-text p {
+	font-size: 0.8rem;
+	color: rgba(255,255,255,0.45);
+}
+.sa-footer {
+	position: relative;
+	z-index: 2;
+	margin-top: auto;
+	padding-top: 24px;
+}
+.sa-footer p {
+	font-size: 0.75rem;
+	color: rgba(255,255,255,0.3);
+}
+
+/* Right Panel */
+.sa-right {
+	width: 480px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	background: #fff;
+	overflow: hidden;
+}
+.sa-form-wrap {
+	width: 100%;
+	max-width: 360px;
+	max-height: 100%;
+	overflow: hidden;
+}
+.sa-form-header {
+	margin-bottom: 28px;
+}
+.sa-form-header h2 {
+	font-size: 1.4rem;
+	font-weight: 700;
+	color: #1a1a2e;
+	margin-bottom: 6px;
+	letter-spacing: -0.3px;
+}
+.sa-form-header p {
+	font-size: 0.88rem;
+	color: #6b7280;
+}
+.sa-field {
+	margin-bottom: 16px;
+}
+.sa-field label {
+	display: block;
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: #374151;
+	margin-bottom: 6px;
+}
+.sa-input-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+.sa-input-wrap .sa-icon {
+	position: absolute;
+	left: 14px;
+	color: #9ca3af;
+	display: flex;
+	align-items: center;
+	pointer-events: none;
+	transition: color 0.2s;
+}
+.sa-input-wrap:focus-within .sa-icon {
+	color: #4f8fd6;
+}
+.sa-input {
+	width: 100%;
+	padding: 12px 14px 12px 44px;
+	font-size: 0.92rem;
+	color: #1a1a2e;
+	background: #f9fafb;
+	border: 1.5px solid #e5e7eb;
+	border-radius: 10px;
+	outline: none;
+	transition: all 0.2s;
+	font-family: inherit;
+}
+.sa-input::placeholder {
+	color: #9ca3af;
+}
+.sa-input:focus {
+	border-color: #4f8fd6;
+	background: #fff;
+	box-shadow: 0 0 0 3px rgba(79,143,214,0.1);
+}
+.sa-pw-toggle {
+	position: absolute;
+	right: 12px;
+	background: none;
+	border: none;
+	color: #9ca3af;
+	cursor: pointer;
+	padding: 4px;
+	display: flex;
+	align-items: center;
+	transition: color 0.2s;
+}
+.sa-pw-toggle:hover { color: #6b7280; }
+
+/* Submit */
+.sa-submit {
+	width: 100%;
+	padding: 13px;
+	margin-top: 8px;
+	background: #1a1a2e;
+	color: #fff;
+	border: none;
+	border-radius: 10px;
+	font-size: 0.92rem;
+	font-weight: 600;
+	font-family: inherit;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	transition: all 0.2s;
+}
+.sa-submit:hover {
+	background: #16213e;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(26,26,46,0.25);
+}
+.sa-submit:active {
+	transform: translateY(0);
+}
+.sa-submit svg {
+	transition: transform 0.2s;
+}
+.sa-submit:hover svg {
+	transform: translateX(3px);
+}
+
+/* Back link */
+.sa-back {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 24px;
+	font-size: 0.82rem;
+	color: #9ca3af;
+	text-decoration: none;
+	transition: color 0.2s;
+}
+.sa-back:hover { color: #4f8fd6; }
+.sa-back svg { transition: transform 0.2s; }
+.sa-back:hover svg { transform: translateX(-3px); }
+
+/* Responsive */
+@media (max-width: 900px) {
+	.sa-left { display: none; }
+	.sa-right { width: 100%; height: 100vh; }
+}
+</style>
+</head>
+<body class="sariadmin-body">
+
+${flashHtml}
+
+<div class="sa-split">
+  <div class="sa-left">
+    <div class="sa-brand">
+      <div class="sa-brand-logo">
+        <div class="sa-brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <span class="sa-brand-name">SARI</span>
+      </div>
+      <h1 class="sa-hero-title">Perpustakaan<br>Digital Admin</h1>
+      <p class="sa-hero-desc">Kelola koleksi buku, pengguna, dan sistem perpustakaan digital dari satu tempat.</p>
+      <div class="sa-features">
+        <div class="sa-feature">
+          <div class="sa-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <div class="sa-feature-text"><h4>Manajemen Buku</h4><p>Tambah, edit, dan hapus koleksi</p></div>
+        </div>
+        <div class="sa-feature">
+          <div class="sa-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="sa-feature-text"><h4>Kelola Pengguna</h4><p>Akun mahasiswa dan pustakawan</p></div>
+        </div>
+        <div class="sa-feature">
+          <div class="sa-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="sa-feature-text"><h4>Statistik</h4><p>Pantau aktivitas peminjaman</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="sa-footer">
+      <p>&copy; ${new Date().getFullYear()} Universitas Sari Mulia</p>
+    </div>
+  </div>
+  <div class="sa-right">
+    <div class="sa-form-wrap">
+      ${body}
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+</body>
+</html>`;
+}
+
 export function csrfToken(): string {
 	// Ponytail: simple HMAC-based token for CSRF (stateless, no session storage needed)
 	const secret =
