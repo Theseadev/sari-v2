@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
 	var authOpenBtn = document.getElementById("openAuth");
 	var authModal = document.getElementById("authModal");
 	var authCloseBtn = document.getElementById("closeAuthModal");
-	var authCard = authModal ? authModal.querySelector(".modal-card") : null;
+	var authCard = authModal ? authModal.querySelector(".am-card") : null;
 
 	function openAuthModal() {
 		if (!authModal || !authCard || !authOpenBtn) return;
@@ -167,27 +167,41 @@ document.addEventListener("DOMContentLoaded", function () {
 		var originX = btnRect.left + btnRect.width / 2;
 		var originY = btnRect.top + btnRect.height / 2;
 		authCard.style.transformOrigin = originX + "px " + originY + "px";
-		authModal.classList.remove("closing");
+		// Force restart animation by removing then re-adding
+		authModal.classList.remove("show", "closing");
+		authCard.style.animation = "none";
+		authCard.offsetHeight; // force reflow
+		authCard.style.animation = "";
 		authModal.classList.add("show");
 	}
 
 	function closeAuthModal() {
-		if (!authModal) return;
+		if (!authModal || !authCard || !authOpenBtn) return;
+		var btnRect = authOpenBtn.getBoundingClientRect();
+		var originX = btnRect.left + btnRect.width / 2;
+		var originY = btnRect.top + btnRect.height / 2;
+		authCard.style.transformOrigin = originX + "px " + originY + "px";
+		// Force restart close animation
+		authCard.style.animation = "none";
+		authCard.offsetHeight;
+		authCard.style.animation = "";
 		authModal.classList.remove("show");
 		authModal.classList.add("closing");
 		setTimeout(function () {
 			authModal.classList.remove("closing");
-		}, 250);
+		}, 300);
 	}
 
 	function switchAuthTab(tabName) {
 		if (!authModal) return;
-		authModal.querySelectorAll(".auth-tab").forEach(function (btn) {
+		authModal.querySelectorAll(".am-tab").forEach(function (btn) {
 			btn.classList.toggle("active", btn.dataset.tab === tabName);
 		});
-		authModal.querySelectorAll(".auth-panel").forEach(function (panel) {
+		authModal.querySelectorAll(".am-panel").forEach(function (panel) {
 			panel.classList.toggle("active", panel.id === "panel-" + tabName);
 		});
+		var tabs = authModal.querySelector(".am-tabs");
+		if (tabs) tabs.dataset.active = tabName;
 	}
 
 	if (authOpenBtn && authModal) {
@@ -204,17 +218,29 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 
 	// Tab switching
-	document.querySelectorAll(".auth-tab").forEach(function (btn) {
+	document.querySelectorAll(".am-tab").forEach(function (btn) {
 		btn.addEventListener("click", function () {
 			switchAuthTab(btn.dataset.tab);
 		});
 	});
 
-	// Switch links ("Sudah punya akun? Login" / "Belum punya akun? Daftar")
+	// Switch links
 	document.querySelectorAll("[data-switch]").forEach(function (link) {
 		link.addEventListener("click", function (e) {
 			e.preventDefault();
 			switchAuthTab(link.dataset.switch);
+		});
+	});
+
+	// Password toggle
+	document.querySelectorAll(".am-pw-toggle").forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			var target = document.getElementById(btn.dataset.target);
+			if (!target) return;
+			var show = target.type === "password";
+			target.type = show ? "text" : "password";
+			btn.querySelector(".eye-open").style.display = show ? "none" : "";
+			btn.querySelector(".eye-closed").style.display = show ? "" : "none";
 		});
 	});
 
@@ -230,7 +256,6 @@ document.addEventListener("DOMContentLoaded", function () {
 	if (authParam && authModal) {
 		switchAuthTab(authParam);
 		openAuthModal();
-		// Clean URL without reload
 		window.history.replaceState({}, "", window.location.pathname);
 	}
 

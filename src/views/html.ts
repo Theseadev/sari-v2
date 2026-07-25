@@ -81,58 +81,99 @@ ${
 	!user
 		? `
 <div id="authModal" class="modal-overlay">
-  <div class="modal-card modal-sm">
-    <button class="modal-close" id="closeAuthModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" data-tab="login">Masuk</button>
-      <button type="button" class="auth-tab" data-tab="register">Daftar</button>
+  <div class="am-card">
+    <button class="am-close" id="closeAuthModal" aria-label="Tutup">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <div class="am-header">
+      <div class="am-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <h2 class="am-title">Selamat Datang</h2>
+      <p class="am-sub">Masuk untuk mengakses koleksi lengkap</p>
     </div>
-    <div class="auth-panels">
-      <div class="auth-panel active" id="panel-login">
-        <h2>Masuk Perpustakaan Digital</h2>
+
+    <div class="am-tabs">
+      <button type="button" class="am-tab active" data-tab="login">Masuk</button>
+      <button type="button" class="am-tab" data-tab="register">Daftar</button>
+      <span class="am-tab-indicator"></span>
+    </div>
+
+    <div class="am-body">
+      <div class="am-panel active" id="panel-login">
         <form method="POST" action="/login">
           <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
-          <div class="form-group">
+          <div class="am-field">
             <label for="modal-email">Email</label>
-            <input type="email" id="modal-email" name="email" class="form-control" required autocomplete="email" placeholder="email@unisma.ac.id">
+            <div class="am-input-wrap">
+              <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+              <input type="email" id="modal-email" name="email" class="am-input" required autocomplete="email" placeholder="nama@universitas.ac.id">
+            </div>
           </div>
-          <div class="form-group">
+          <div class="am-field">
             <label for="modal-password">Password</label>
-            <input type="password" id="modal-password" name="password" class="form-control" required autocomplete="current-password">
+            <div class="am-input-wrap">
+              <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+              <input type="password" id="modal-password" name="password" class="am-input" required autocomplete="current-password" placeholder="Masukkan password">
+              <button type="button" class="am-pw-toggle" data-target="modal-password" aria-label="Tampilkan Password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+              </button>
+            </div>
           </div>
           <input type="hidden" name="redirect" value="/buku">
-          <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+          <button type="submit" class="am-submit">Masuk</button>
         </form>
-
-        <p class="text-center mt-2 text-muted"><a href="/buku">Jelajahi Katalog Publik →</a></p>
+        <p class="am-alt"><a href="/buku">Jelajahi Katalog Publik →</a></p>
       </div>
-      <div class="auth-panel" id="panel-register">
-        <h2>Daftar Akun Tamu</h2>
+
+      <div class="am-panel" id="panel-register">
         <form method="POST" action="/register">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="modal-name">Nama Lengkap</label>
-              <input type="text" id="modal-name" name="name" class="form-control" required autocomplete="name" placeholder="Nama lengkap">
-            </div>
-            <div class="form-group">
-              <label for="modal-email-reg">Email</label>
-              <input type="email" id="modal-email-reg" name="email" class="form-control" required autocomplete="email" placeholder="email@unisma.ac.id">
-            </div>
-          </div>
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="modal-password-reg">Password</label>
-              <input type="password" id="modal-password-reg" name="password" class="form-control" required autocomplete="new-password" minlength="6" placeholder="Minimal 6 karakter">
-            </div>
-            <div class="form-group">
-              <label for="modal-password_confirm">Konfirmasi Password</label>
-              <input type="password" id="modal-password_confirm" name="password_confirm" class="form-control" required autocomplete="new-password" placeholder="Ulangi password">
-            </div>
-          </div>
           <input type="hidden" name="csrf_token" value="${esc(csrfToken())}">
-          <button type="submit" class="btn btn-primary btn-block">Daftar</button>
+          <div class="am-row">
+            <div class="am-field">
+              <label for="modal-name">Nama</label>
+              <div class="am-input-wrap">
+                <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                <input type="text" id="modal-name" name="name" class="am-input" required autocomplete="name" placeholder="Nama lengkap">
+              </div>
+            </div>
+            <div class="am-field">
+              <label for="modal-email-reg">Email</label>
+              <div class="am-input-wrap">
+                <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                <input type="email" id="modal-email-reg" name="email" class="am-input" required autocomplete="email" placeholder="nama@univ.ac.id">
+              </div>
+            </div>
+          </div>
+          <div class="am-row">
+            <div class="am-field">
+              <label for="modal-password-reg">Password</label>
+              <div class="am-input-wrap">
+                <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                <input type="password" id="modal-password-reg" name="password" class="am-input" required autocomplete="new-password" minlength="6" placeholder="Minimal 6 karakter">
+                <button type="button" class="am-pw-toggle" data-target="modal-password-reg" aria-label="Tampilkan Password">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="am-field">
+              <label for="modal-password_confirm">Ulangi Password</label>
+              <div class="am-input-wrap">
+                <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg></span>
+                <input type="password" id="modal-password_confirm" name="password_confirm" class="am-input" required autocomplete="new-password" placeholder="Ulangi password">
+                <button type="button" class="am-pw-toggle" data-target="modal-password_confirm" aria-label="Tampilkan Password">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="am-submit">Daftar</button>
         </form>
-        <p class="text-center mt-2 text-muted"><a href="#" data-switch="login">Sudah punya akun? Masuk →</a></p>
+        <p class="am-alt"><a href="#" data-switch="login">Sudah punya akun? Masuk →</a></p>
       </div>
     </div>
   </div>
