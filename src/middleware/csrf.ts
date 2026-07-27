@@ -14,10 +14,11 @@ export const csrfProtection: MiddlewareHandler = async (c, next) => {
 		return;
 	}
 
-	// Skip CSRF untuk bookmark toggle & translate API
+	// Skip CSRF untuk endpoint yang sudah punya auth sendiri
 	if (
 		c.req.path.includes("/bookmark/") ||
-		c.req.path === "/api/translate"
+		c.req.path === "/api/translate" ||
+		c.req.path === "/admin/terminal/exec"
 	) {
 		await next();
 		return;

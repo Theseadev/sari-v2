@@ -1,58 +1,61 @@
-/* SARI v2 — Soft Blue */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
+/* SARI v2 — Neo Brutalism */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap");
 
 :root {
-	--primary: #7ba7c9;
-	--primary-dark: #5d8dae;
-	--primary-light: #e8f0f7;
-	--primary-glow: rgba(123, 167, 201, 0.12);
-	--accent: #c4d8e8;
-	--success: #5a8f7a;
-	--danger: #c97a72;
-	--bg: #f5f7fa;
+	/* Neo Brutalism Palette */
+	--primary: #0055ff;
+	--primary-dark: #0044cc;
+	--primary-light: #e6f0ff;
+	--primary-glow: rgba(0, 85, 255, 0.2);
+	--accent: #ff5c00;
+	--accent-light: #fff3e6;
+	--success: #00c853;
+	--danger: #ff1744;
+	--bg: #f5f0eb;
 	--bg-card: #ffffff;
-	--bg-elevated: #f0f4f8;
-	--bg-warm: #e6edf4;
-	--border: #c8d6e0;
-	--border-light: #dce6ee;
-	--text: #2c3e4f;
-	--text-muted: #647585;
-	--text-dim: #94a4b5;
-	--text-heading: #1a2a38;
+	--bg-elevated: #e6f0ff;
+	--bg-warm: #ffe8d6;
+	--border: #000000;
+	--border-light: #1a1a1a;
+	--text: #1a1a1a;
+	--text-muted: #4a4a4a;
+	--text-dim: #777777;
+	--text-heading: #000000;
 	--radius: 12px;
 	--radius-sm: 8px;
 	--radius-full: 9999px;
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-	--shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.07);
-	--shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.08);
-	--font-heading: 'Playfair Display', Georgia, serif;
-	--font-body: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+	--shadow-sm: 3px 3px 0px #000;
+	--shadow-md: 5px 5px 0px #000;
+	--shadow-lg: 8px 8px 0px #000;
+	--shadow-xl: 12px 12px 0px #000;
+	--font-heading: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+	--font-body: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
 }
 
-/* Dark theme */
+/* Dark theme — Neo Brutalism */
 [data-theme="dark"] {
-	--primary: #89b8d8;
-	--primary-dark: #6d9ebf;
-	--primary-light: #1f242e;
-	--primary-glow: rgba(137, 184, 216, 0.12);
-	--accent: #4a6070;
-	--success: #5a8f7a;
-	--danger: #d4857a;
-	--bg: #161a21;
-	--bg-card: #1f242e;
-	--bg-elevated: #243040;
-	--bg-warm: #1a2430;
-	--border: #2e3a48;
-	--border-light: #243040;
-	--text: #e0e8f0;
-	--text-muted: #8a9aac;
-	--text-dim: #5a6a7a;
-	--text-heading: #f0f4f8;
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-	--shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.35);
-	--shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.4);
+	--primary: #3d8bff;
+	--primary-dark: #5a9fff;
+	--primary-light: #1a2a40;
+	--primary-glow: rgba(61, 139, 255, 0.25);
+	--accent: #ff7a33;
+	--accent-light: #3a2a1a;
+	--success: #33e07a;
+	--danger: #ff4d6a;
+	--bg: #1a1a1a;
+	--bg-card: #2a2a2a;
+	--bg-elevated: #1a2a40;
+	--bg-warm: #2a2015;
+	--border: #ffffff;
+	--border-light: #ffffff;
+	--text: #ffffff;
+	--text-muted: #cccccc;
+	--text-dim: #999999;
+	--text-heading: #ffffff;
+	--shadow-sm: 3px 3px 0px #ffffff;
+	--shadow-md: 5px 5px 0px #ffffff;
+	--shadow-lg: 8px 8px 0px #ffffff;
+	--shadow-xl: 12px 12px 0px #ffffff;
 }
 
 *,
@@ -97,7 +100,7 @@ img {
 	padding: 0 24px;
 }
 
-/* ===== HEADER ===== */
+/* ===== HEADER — Neo Brutalism ===== */
 .header {
 	position: fixed;
 	top: 20px;
@@ -106,18 +109,16 @@ img {
 	width: calc(100% - 48px);
 	max-width: 1140px;
 	z-index: 100;
-	background: rgba(255, 255, 255, 0.75);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid rgba(255, 255, 255, 0.5);
-	border-radius: 9999px;
-	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+	background: #ffffff;
+	border: 2px solid #000000;
+	border-radius: 12px;
+	box-shadow: 4px 4px 0px #000000;
 	margin-bottom: 140px;
 }
 [data-theme="dark"] .header {
-	background: rgba(22, 28, 36, 0.75);
-	border-color: rgba(255, 255, 255, 0.1);
-	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+	background: #2a2a2a;
+	border-color: #ffffff;
+	box-shadow: 4px 4px 0px #ffffff;
 }
 .header-inner {
 	display: flex;
@@ -588,22 +589,18 @@ main:not(.admin-main) {
 	gap: 16px;
 }
 
-/* Book Card — library card aesthetic */
+/* Book Card — Neo Brutalism */
 .book-card {
 	background: var(--bg-card);
 	border-radius: var(--radius);
-	border: 1px solid var(--border-light);
+	border: 2px solid #000000;
 	overflow: hidden;
-	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-	box-shadow:
-		0 1px 3px rgba(0, 0, 0, 0.03),
-		0 4px 12px rgba(140, 192, 235, 0.06);
+	transition: all 0.15s ease;
+	box-shadow: 4px 4px 0px #000000;
 }
 .book-card:hover {
-	box-shadow:
-		0 12px 35px rgba(140, 192, 235, 0.18),
-		0 24px 48px rgba(0, 0, 0, 0.05);
-	transform: translateY(-6px);
+	box-shadow: 6px 6px 0px #000000;
+	transform: translate(-2px, -2px);
 	border-color: var(--primary);
 }
 
@@ -831,7 +828,7 @@ main:not(.admin-main) {
 	line-height: 1.8;
 }
 
-/* ===== BUTTONS ===== */
+/* ===== BUTTONS — Neo Brutalism ===== */
 .btn {
 	display: inline-flex;
 	align-items: center;
@@ -839,29 +836,34 @@ main:not(.admin-main) {
 	padding: 10px 24px;
 	border-radius: var(--radius-sm);
 	font-size: 0.875rem;
-	font-weight: 600;
+	font-weight: 700;
 	font-family: var(--font-body);
 	cursor: pointer;
-	transition: all 0.2s;
+	transition: all 0.1s ease;
 	background: var(--bg-card);
 	color: var(--text);
-	border: 1px solid var(--border);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	border: 2px solid #000000;
+	box-shadow: 4px 4px 0px #000000;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 .btn:hover {
 	background: var(--bg-warm);
-	transform: translateY(-1px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+	transform: translate(-2px, -2px);
+	box-shadow: 6px 6px 0px #000000;
+}
+.btn:active {
+	transform: translate(2px, 2px);
+	box-shadow: 2px 2px 0px #000000;
 }
 .btn-primary {
 	background: var(--primary);
-	color: #fff;
-	border-color: var(--primary);
+	color: #ffffff;
+	border-color: #000000;
 }
 .btn-primary:hover {
 	background: var(--primary-dark);
-	border-color: var(--primary-dark);
-	color: #fff;
+	color: #ffffff;
 }
 .btn-danger {
 	background: var(--danger);
@@ -950,18 +952,19 @@ main:not(.admin-main) {
 .form-control {
 	width: 100%;
 	padding: 11px 16px;
-	border: 1px solid var(--border);
+	border: 2px solid #000000;
 	border-radius: var(--radius-sm);
 	font-size: 0.9rem;
 	font-family: var(--font-body);
-	transition: all 0.2s;
+	transition: all 0.1s ease;
 	outline: none;
-	background: var(--bg);
+	background: var(--bg-card);
 	color: var(--text);
+	box-shadow: 3px 3px 0px #000000;
 }
 .form-control:focus {
 	border-color: var(--primary);
-	box-shadow: 0 0 0 3px var(--primary-glow);
+	box-shadow: 4px 4px 0px var(--primary);
 }
 
 /* File input button — tema gelap */
@@ -1714,7 +1717,7 @@ input[type="file"]::file-selector-button:hover {
 .sidebar {
 	width: 240px;
 	background: var(--bg-card);
-	border-right: 1px solid var(--border-light);
+	border-right: 2px solid #000000;
 	position: fixed;
 	top: 64px;
 	left: 0;
@@ -1722,7 +1725,7 @@ input[type="file"]::file-selector-button:hover {
 	z-index: 50;
 	display: flex;
 	flex-direction: column;
-	box-shadow: 1px 0 4px rgba(0, 0, 0, 0.03);
+	box-shadow: 4px 0 0px #000000;
 }
 .sb-nav {
 	padding: 16px 12px;
@@ -1933,9 +1936,9 @@ input[type="file"]::file-selector-button:hover {
 	margin-bottom: 28px;
 	padding: 24px 28px;
 	background: var(--bg-card);
-	border-radius: 16px;
-	border: 1px solid var(--border-light);
-	box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+	border-radius: var(--radius);
+	border: 2px solid #000000;
+	box-shadow: 4px 4px 0px #000000;
 }
 .admin-avatar {
 	width: 56px;
@@ -1986,14 +1989,15 @@ input[type="file"]::file-selector-button:hover {
 	gap: 12px;
 	background: var(--bg-card);
 	padding: 16px 18px;
-	border-radius: 12px;
-	border: 1px solid var(--border-light);
-	transition: all 0.3s ease;
+	border-radius: var(--radius);
+	border: 2px solid #000000;
+	transition: all 0.1s ease;
+	box-shadow: 4px 4px 0px #000000;
 }
 .stat-item:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
-	border-color: var(--primary);
+	transform: translate(-2px, -2px);
+	box-shadow: 6px 6px 0px #000000;
+	border-color: var(--accent);
 }
 .stat-icon {
 	display: flex;
@@ -2032,19 +2036,19 @@ input[type="file"]::file-selector-button:hover {
 }
 .dash-section {
 	background: var(--bg-card);
-	border-radius: 14px;
-	border: 1px solid var(--border-light);
+	border-radius: var(--radius);
+	border: 2px solid #000000;
 	overflow: hidden;
-	box-shadow: var(--shadow-sm);
-	transition: all 0.3s ease;
+	box-shadow: 4px 4px 0px #000000;
+	transition: all 0.1s ease;
 	display: flex;
 	flex-direction: column;
 	max-height: 460px;
 }
 .dash-section:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--primary);
-	transform: translateY(-1px);
+	transform: translate(-2px, -2px);
+	box-shadow: 6px 6px 0px #000000;
+	border-color: var(--accent);
 }
 .dash-section-header {
 	display: flex;

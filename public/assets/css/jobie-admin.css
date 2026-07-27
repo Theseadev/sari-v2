@@ -1,95 +1,95 @@
-/* Jobie Admin — Modern Deep Purple Sidebar with Bokeh Blur Effect */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+/* Jobie Admin — Neo Brutalism */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap");
 
 :root {
-	/* Deep Purple Palette */
-	--j-purple-950: #1a0a2e;
-	--j-purple-900: #240f3d;
-	--j-purple-800: #2d144d;
-	--j-purple-700: #3a1a6b;
-	--j-purple-600: #4c248a;
-	--j-purple-500: #6b3ac9;
-	--j-purple-400: #8b5cf6;
-	--j-purple-300: #a885f7;
-	--j-purple-200: #d6c8fa;
-	--j-purple-100: #ede9fe;
-	--j-purple-50: #f5f3ff;
+	/* Neo Brutalism Palette */
+	--j-purple-950: #000000;
+	--j-purple-900: #1a1a1a;
+	--j-purple-800: #333333;
+	--j-purple-700: #4d4d4d;
+	--j-purple-600: #666666;
+	--j-purple-500: #0055ff;
+	--j-purple-400: #3d8bff;
+	--j-purple-300: #6aabff;
+	--j-purple-200: #b3d4ff;
+	--j-purple-100: #e6f0ff;
+	--j-purple-50: #f0f7ff;
 
-	/* Accent */
-	--j-accent: #22d3ee;
-	--j-accent-glow: rgba(34, 211, 238, 0.35);
+	/* Accent — Orange */
+	--j-accent: #ff5c00;
+	--j-accent-glow: rgba(255, 92, 0, 0.25);
 
 	/* Neutral */
 	--j-white: #ffffff;
-	--j-gray-50: #fafafa;
-	--j-gray-100: #f4f4f5;
-	--j-gray-200: #e4e4e7;
-	--j-gray-300: #d4d4d8;
-	--j-gray-400: #a1a1aa;
-	--j-gray-500: #71717a;
-	--j-gray-600: #52525b;
-	--j-gray-700: #3f3f46;
-	--j-gray-800: #27272a;
-	--j-gray-900: #18181b;
-	--j-gray-950: #09090b;
+	--j-gray-50: #f5f0eb;
+	--j-gray-100: #ebe4db;
+	--j-gray-200: #d4ccc2;
+	--j-gray-300: #b8afa5;
+	--j-gray-400: #8a8178;
+	--j-gray-500: #5c5550;
+	--j-gray-600: #4a4440;
+	--j-gray-700: #383330;
+	--j-gray-800: #262220;
+	--j-gray-900: #141210;
+	--j-gray-950: #0a0908;
 
 	/* Semantic */
-	--j-bg: #fafafa;
+	--j-bg: #f5f0eb;
 	--j-bg-elevated: #ffffff;
-	--j-bg-subtle: #f4f4f5;
-	--j-border: #e4e4e7;
-	--j-border-light: #f4f4f5;
-	--j-text: #18181b;
-	--j-text-muted: #71717a;
-	--j-text-dim: #a1a1aa;
-	--j-text-heading: #09090b;
+	--j-bg-subtle: #f0eaff;
+	--j-border: #000000;
+	--j-border-light: #000000;
+	--j-text: #1a1a1a;
+	--j-text-muted: #4a4a4a;
+	--j-text-dim: #777777;
+	--j-text-heading: #000000;
 
 	/* Sidebar specific */
-	--j-sb-bg: linear-gradient(180deg, #1a0a2e 0%, #240f3d 50%, #2d144d 100%);
-	--j-sb-border: rgba(139, 92, 246, 0.15);
-	--j-sb-text: #ede9fe;
-	--j-sb-text-muted: #a885f7;
-	--j-sb-text-dim: #8b5cf6;
-	--j-sb-active-bg: rgba(139, 92, 246, 0.18);
-	--j-sb-active-border: rgba(139, 92, 246, 0.4);
-	--j-sb-hover-bg: rgba(139, 92, 246, 0.1);
+	--j-sb-bg: #000000;
+	--j-sb-border: #e0d4ff;
+	--j-sb-text: #ffffff;
+	--j-sb-text-muted: #cccccc;
+	--j-sb-text-dim: #ff5c00;
+	--j-sb-active-bg: #0055ff;
+	--j-sb-active-border: #ffffff;
+	--j-sb-hover-bg: #333333;
 
-	/* Effects */
+	/* Effects — Neo Brutalism */
 	--j-radius-sm: 8px;
 	--j-radius: 12px;
 	--j-radius-lg: 16px;
 	--j-radius-xl: 20px;
 	--j-radius-full: 9999px;
-	--j-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-	--j-shadow: 0 4px 12px rgba(26, 10, 46, 0.08);
-	--j-shadow-md: 0 8px 24px rgba(26, 10, 46, 0.1);
-	--j-shadow-lg: 0 16px 48px rgba(26, 10, 46, 0.12);
-	--j-shadow-xl: 0 24px 64px rgba(26, 10, 46, 0.15);
-	--j-glow: 0 0 0 3px rgba(139, 92, 246, 0.25);
-	--j-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-	--j-transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+	--j-shadow-sm: 3px 3px 0px #000;
+	--j-shadow: 4px 4px 0px #000;
+	--j-shadow-md: 5px 5px 0px #000;
+	--j-shadow-lg: 8px 8px 0px #000;
+	--j-shadow-xl: 12px 12px 0px #000;
+	--j-glow: 3px 3px 0px var(--j-accent);
+	--j-transition: 0.1s ease;
+	--j-transition-spring: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 
 	/* Fonts */
-	--j-font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+	--j-font-sans: "DM Sans", "Segoe UI", system-ui, sans-serif;
 	--j-font-display: "Space Grotesk", system-ui, sans-serif;
 }
 
-/* Dark Theme */
+/* Dark Theme — Neo Brutalism */
 [data-theme="dark"] {
-	--j-bg: #09090b;
-	--j-bg-elevated: #18181b;
-	--j-bg-subtle: #27272a;
-	--j-border: #3f3f46;
-	--j-border-light: #27272a;
-	--j-text: #fafafa;
-	--j-text-muted: #a1a1aa;
-	--j-text-dim: #71717a;
+	--j-bg: #1a1a1a;
+	--j-bg-elevated: #2a2a2a;
+	--j-bg-subtle: #f0eaff;
+	--j-border: #ffffff;
+	--j-border-light: #ffffff;
+	--j-text: #ffffff;
+	--j-text-muted: #cccccc;
+	--j-text-dim: #999999;
 	--j-text-heading: #ffffff;
 
-	--j-sb-bg: linear-gradient(180deg, #0f0419 0%, #160726 50%, #1a0a2e 100%);
-	--j-sb-border: rgba(139, 92, 246, 0.2);
-	--j-sb-hover-bg: rgba(139, 92, 246, 0.15);
-	--j-sb-active-bg: rgba(139, 92, 246, 0.25);
+	--j-sb-bg: #000000;
+	--j-sb-border: #e0d4ff;
+	--j-sb-hover-bg: #333333;
+	--j-sb-active-bg: #0055ff;
 }
 
 *,

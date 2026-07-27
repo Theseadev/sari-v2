@@ -15,6 +15,7 @@ import * as usersCrud from "./controllers/admin/users";
 import * as facsCrud from "./controllers/admin/faculties";
 import * as progsCrud from "./controllers/admin/programs";
 import * as catsCrud from "./controllers/admin/categories";
+import * as termCtrl from "./controllers/admin/terminal";
 import * as password from "./controllers/password";
 import * as profile from "./controllers/profile";
 import * as bookmarks from "./controllers/bookmarks";
@@ -27,6 +28,7 @@ const app = new Hono();
 // Static files
 app.use("/assets/*", serveStatic({ root: "public" }));
 app.use("/uploads/*", serveStatic({ root: "public" }));
+app.use("/pdfs/*", serveStatic({ root: "storage" }));
 
 // CSRF protection for mutating requests
 app.use("*", csrfProtection);
@@ -115,6 +117,10 @@ app.get("/api/openlibrary/search", (c) => olCtrl.search(c));
 app.get("/api/openlibrary/isbn/:isbn", (c) => olCtrl.byIsbn(c));
 app.get("/api/openlibrary/cover", (c) => olCtrl.coverProxy(c));
 app.post("/api/translate", (c) => olCtrl.translate(c));
+
+// Terminal (super_admin only)
+app.get("/admin/terminal", (c) => termCtrl.terminalPage(c));
+app.post("/admin/terminal/exec", (c) => termCtrl.execCommand(c));
 
 // Categories CRUD
 app.get("/admin/categories", (c) => catsCrud.list(c));

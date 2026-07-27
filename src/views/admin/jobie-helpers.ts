@@ -87,6 +87,15 @@ export function jobieAdminLayout(
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><polyline points="14 14 10 18 6 14"/><line x1="14" y1="10" x2="14" y2="4"/></svg>
         `,
 				)}
+        ${navItem(
+					"/admin/terminal",
+					"Terminal",
+					"terminal",
+					currentPage,
+					`
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        `,
+				)}
       </ul>
     </nav>
 

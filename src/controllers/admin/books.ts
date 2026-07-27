@@ -153,8 +153,8 @@ export async function store(c: Context) {
 	await query(
 		`INSERT INTO books (program_id, uploaded_by, title, slug, author,
       publisher, publication_year, isbn, description, access_type,
-      file_path, cover_image, page_count, file_size)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      file_path, fliphtml5_book_id, cover_image, page_count, file_size)
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			programId,
 			user.userId,
@@ -167,6 +167,7 @@ export async function store(c: Context) {
 			body.description || null,
 			body.access_type || "public",
 			filePath,
+			body.fliphtml5_book_id || null,
 			coverPath,
 			pageCount,
 			0,
@@ -273,7 +274,7 @@ export async function update(c: Context) {
 
 	await query(
 		`UPDATE books SET title=?, author=?, publisher=?, publication_year=?, isbn=?,
-      description=?, access_type=?, program_id=?, cover_image=?
+      description=?, access_type=?, program_id=?, cover_image=?, fliphtml5_book_id=?
    WHERE id=?`,
 		[
 			title,
@@ -285,6 +286,7 @@ export async function update(c: Context) {
 			body.access_type || "public",
 			Number(body.program_id) || null,
 			coverPath,
+			body.fliphtml5_book_id || null,
 			id,
 		],
 	);
