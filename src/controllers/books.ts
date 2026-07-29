@@ -1084,24 +1084,12 @@ export async function catalog(c: Context) {
                         </div>
                     </div>
 
-                    <!-- COLUMN KANAN: TEXT, SEARCH, & BADGES -->
+                    <!-- COLUMN KANAN: TEXT & BADGES -->
                     <div class="hero-budi-right">
                         <div class="hero-budi-tag">📖 PERPUSTAKAAN DIGITAL UNIVERSITAS SARI MULIA</div>
                         <h1 class="hero-title-compact">Akses Ribuan Koleksi Buku, <span class="highlight">Jurnal & Referensi Ilmiah</span></h1>
                         <p class="hero-desc-compact">Platform literasi digital terintegrasi untuk civitas akademika Universitas Sari Mulia Banjarmasin. Temukan modul pembelajaran dan buku ajar berkualitas.</p>
                         
-                        <form method="GET" action="/buku" class="filter-form" style="width:100%;margin:0 0 16px">
-                            <div class="search-box">
-                                <span class="icon">${ICONS.search}</span>
-                                <input type="text" name="q" placeholder="Cari judul buku, penulis, prodi, ISBN..." value="${esc(search)}">
-                                <button type="submit">Cari Buku</button>
-                            </div>
-                            <div class="filter-row">
-                                ${buildDropdown("faculty", "Semua Fakultas", facultyId, facItems)}
-                                ${buildDropdown("program", "Semua Prodi", programId, progItems)}
-                            </div>
-                        </form>
-
                         <!-- 3 FEATURE BADGES COMPACT -->
                         <div class="hero-badges-grid-compact">
                             <div class="hero-badge-card">
