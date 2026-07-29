@@ -1,15 +1,26 @@
-// src/controllers/auth.ts - Login/Logout
+// src/controllers/auth.ts - Login/Logout + Email Verification
 
 import type { Context } from "hono";
 import { setCookie, deleteCookie } from "hono/cookie";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import crypto from "node:crypto";
+import { createTransport } from "nodemailer";
 import { APP } from "../config/app";
 import { query, queryOne } from "../config/database";
 import type { JwtPayload } from "../types";
 import { layout, sariadminLayout, csrfToken } from "../views/html";
 import { getUser, getFlash, setFlashRedirect, esc, hasRole } from "../helpers";
+
+const transporter = APP.SMTP_USER && APP.SMTP_PASS
+	? createTransport({
+			host: APP.SMTP_HOST,
+			port: APP.SMTP_PORT,
+			secure: APP.SMTP_PORT === 465,
+			auth: { user: APP.SMTP_USER, pass: APP.SMTP_PASS },
+	  })
+	: null;
 
 // ---- Rate limiting (in-memory, ponytail: simple & works for single-instance) ----
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -157,11 +168,32 @@ export async function login(c: Context) {
 	const user = await queryOne<any>(
 		`SELECT u.*, r.name AS role_name
      FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE u.email = ? AND u.status = ?`,
+     WHERE u.email = ? AND u.status = ? AND u.verified_at IS NOT NULL`,
 		[email, "active"],
 	);
 
-	if (!user || !(await bcrypt.compare(password, user.password))) {
+	if (!user) {
+		const unverified = await queryOne(
+			"SELECT id FROM users WHERE email = ? AND verified_at IS NULL",
+			[email],
+		);
+		if (unverified) {
+			return setFlashRedirect(
+				c,
+				"/?auth=login",
+				"Email belum diverifikasi. Cek email kamu untuk link verifikasi.",
+				"warning",
+			);
+		}
+		return setFlashRedirect(
+			c,
+			redirectTo,
+			"Email atau password salah.",
+			"danger",
+		);
+	}
+
+	if (!(await bcrypt.compare(password, user.password))) {
 		return setFlashRedirect(
 			c,
 			redirectTo,
@@ -198,11 +230,19 @@ export async function login(c: Context) {
 		maxAge: 86400,
 	});
 
-	setCookie(c, "flash", JSON.stringify({ type: "success", message: `Selamat datang, ${esc(user.name)}!` }), {
-		httpOnly: true,
-		path: "/",
-		maxAge: 5,
-	});
+	setCookie(
+		c,
+		"flash",
+		JSON.stringify({
+			type: "success",
+			message: `Selamat datang, ${esc(user.name)}!`,
+		}),
+		{
+			httpOnly: true,
+			path: "/",
+			maxAge: 5,
+		},
+	);
 
 	// Log activity
 	await query(
@@ -216,15 +256,21 @@ export async function login(c: Context) {
 export async function logout(c: Context) {
 	const user = getUser(c);
 	deleteCookie(c, "token", { path: "/" });
-	setCookie(c, "flash", JSON.stringify({ type: "success", message: "Berhasil logout." }), {
-		httpOnly: true,
-		path: "/",
-		maxAge: 5,
-	});
+	setCookie(
+		c,
+		"flash",
+		JSON.stringify({ type: "success", message: "Berhasil logout." }),
+		{
+			httpOnly: true,
+			path: "/",
+			maxAge: 5,
+		},
+	);
 
 	// Log activity
 	if (user) {
-		const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+		const ip =
+			c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
 		await query(
 			"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
 			[user.userId, "logout", `Logout: ${user.name}`, ip],
@@ -308,10 +354,16 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
 export async function adminLogin(c: Context) {
-	const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+	const ip =
+		c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 	const rl = checkRateLimit(ip);
 	if (!rl.allowed) {
-		return setFlashRedirect(c, "/sariadmin", `Terlalu banyak percobaan. Coba lagi dalam ${rl.retryAfter} detik.`, "danger");
+		return setFlashRedirect(
+			c,
+			"/sariadmin",
+			`Terlalu banyak percobaan. Coba lagi dalam ${rl.retryAfter} detik.`,
+			"danger",
+		);
 	}
 
 	const body = await c.req.parseBody();
@@ -326,32 +378,84 @@ export async function adminLogin(c: Context) {
 	const user = await queryOne<any>(
 		`SELECT u.*, r.name AS role_name
      FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE u.email = ? AND u.status = ?`,
+     WHERE u.email = ? AND u.status = ? AND u.verified_at IS NOT NULL`,
 		[email, "active"],
 	);
 
-	if (!user || !(await bcrypt.compare(password, user.password))) {
-		return setFlashRedirect(c, "/sariadmin", "Email atau password salah.", "danger");
+	if (!user) {
+		const unverified = await queryOne(
+			"SELECT id FROM users WHERE email = ? AND verified_at IS NULL",
+			[email],
+		);
+		if (unverified) {
+			return setFlashRedirect(
+				c,
+				"/sariadmin",
+				"Email belum diverifikasi. Cek email kamu untuk link verifikasi.",
+				"warning",
+			);
+		}
+		return setFlashRedirect(
+			c,
+			"/sariadmin",
+			"Email atau password salah.",
+			"danger",
+		);
+	}
+
+	if (!(await bcrypt.compare(password, user.password))) {
+		return setFlashRedirect(
+			c,
+			"/sariadmin",
+			"Email atau password salah.",
+			"danger",
+		);
 	}
 
 	if (!adminRoles.includes(user.role_name)) {
-		return setFlashRedirect(c, "/sariadmin", "Akun ini bukan akun admin.", "danger");
+		return setFlashRedirect(
+			c,
+			"/sariadmin",
+			"Akun ini bukan akun admin.",
+			"danger",
+		);
 	}
 
 	loginAttempts.delete(ip);
 
-	const payload: JwtPayload = { userId: user.id, roleName: user.role_name, name: user.name };
+	const payload: JwtPayload = {
+		userId: user.id,
+		roleName: user.role_name,
+		name: user.name,
+	};
 	const token = jwt.sign(payload, APP.JWT_SECRET, { expiresIn: 86400 });
 
-	setCookie(c, "token", token, { httpOnly: true, secure: !APP.DEBUG, sameSite: "Lax", path: "/", maxAge: 86400 });
-	setCookie(c, "flash", JSON.stringify({ type: "success", message: `Selamat datang, ${esc(user.name)}!` }), { httpOnly: true, path: "/", maxAge: 5 });
+	setCookie(c, "token", token, {
+		httpOnly: true,
+		secure: !APP.DEBUG,
+		sameSite: "Lax",
+		path: "/",
+		maxAge: 86400,
+	});
+	setCookie(
+		c,
+		"flash",
+		JSON.stringify({
+			type: "success",
+			message: `Selamat datang, ${esc(user.name)}!`,
+		}),
+		{ httpOnly: true, path: "/", maxAge: 5 },
+	);
 
-	await query("INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)", [user.id, "login", `Login: ${user.name}`, ip]);
+	await query(
+		"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
+		[user.id, "login", `Login: ${user.name}`, ip],
+	);
 
 	return c.redirect("/admin/books");
 }
 
-// ---- Register (Guest -> Mahasiswa) ----
+// ---- Register (Guest -> requires email verification) ----
 export async function register(c: Context) {
 	const ip =
 		c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -375,11 +479,28 @@ export async function register(c: Context) {
 	const { name, email, password } = parsed.data;
 
 	// Check if email already exists
-	const existing = await queryOne("SELECT id FROM users WHERE email = ?", [
-		email,
-	]);
-	if (existing) {
+	const existing = await queryOne(
+		"SELECT id, verified_at FROM users WHERE email = ?",
+		[email],
+	);
+	if (existing && existing.verified_at) {
 		return setFlashRedirect(c, "/register", "Email sudah terdaftar.", "danger");
+	}
+	if (existing && !existing.verified_at) {
+		// Resend verification for unverified account
+		const token = crypto.randomBytes(32).toString("hex");
+		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		await query(
+			"INSERT INTO verification_tokens (email, token, expires_at) VALUES (?, ?, ?)",
+			[email, token, expiresAt],
+		);
+		await sendVerificationEmail(email, token);
+		return setFlashRedirect(
+			c,
+			"/register",
+			"Email sudah terdaftar tapi belum diverifikasi. Kami kirim ulang email verifikasi.",
+			"success",
+		);
 	}
 
 	// Get 'tamu' role ID
@@ -403,40 +524,134 @@ export async function register(c: Context) {
 		[username, name, email, passwordHash, role.id, "active"],
 	);
 
-	// Get user ID for auto-login
-	const newUser = await queryOne<{ id: number }>("SELECT id FROM users WHERE email = ?", [email]);
+	// Generate verification token
+	const token = crypto.randomBytes(32).toString("hex");
+	const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+	await query(
+		"INSERT INTO verification_tokens (email, token, expires_at) VALUES (?, ?, ?)",
+		[email, token, expiresAt],
+	);
+
+	// Send verification email
+	await sendVerificationEmail(email, token);
 
 	loginAttempts.delete(ip);
 
-	// Auto-login: create token and redirect
-	const payload: JwtPayload = {
-		userId: newUser!.id,
-		roleName: "tamu",
-		name: name,
-	};
-	const token = jwt.sign(payload, APP.JWT_SECRET, { expiresIn: 86400 });
+	return setFlashRedirect(
+		c,
+		"/login",
+		"Akun berhasil dibuat! Cek email kamu untuk verifikasi sebelum login.",
+		"success",
+	);
+}
 
-	setCookie(c, "token", token, {
-		httpOnly: true,
-		secure: !APP.DEBUG,
-		sameSite: "Lax",
-		path: "/",
-		maxAge: 86400,
-	});
+// ---- Send Verification Email ----
+async function sendVerificationEmail(email: string, token: string) {
+	const link = `${APP.SITE_URL}/verify-email?token=${token}`;
 
-	// Log activity
-	await query(
-		"INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)",
-		[newUser!.id, "register", `Register: ${name}`, ip],
+	if (!transporter) {
+		console.log("========================================");
+		console.log("🔗 Link verifikasi (dev mode):");
+		console.log(link);
+		console.log(`📧 Untuk: ${email}`);
+		console.log("========================================");
+		return;
+	}
+
+	// ponytail: SMTP failure = fallback to console log
+	try {
+		await transporter.sendMail({
+			from: APP.EMAIL_FROM,
+			to: email,
+			subject: "Verifikasi Email - SARI Perpustakaan Digital",
+			html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:sans-serif;background:#f3f4f6;padding:40px 20px">
+<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">
+<div style="background:#2563eb;padding:24px;text-align:center">
+<h1 style="color:#fff;margin:0;font-size:1.2rem">SARI Perpustakaan Digital</h1>
+</div>
+<div style="padding:32px 24px">
+<h2 style="margin:0 0 12px;font-size:1.1rem">Verifikasi Email</h2>
+<p style="color:#4b5563;line-height:1.6;margin:0 0 24px">Klik tombol di bawah untuk verifikasi akun kamu:</p>
+<a href="${link}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">Verifikasi Email</a>
+<p style="color:#9ca3af;font-size:0.85rem;margin-top:24px">Link berlaku 24 jam. Abaikan jika kamu tidak mendaftar.</p>
+</div>
+</div>
+</body>
+</html>`,
+			});
+		console.log(`✅ Email verifikasi terkirim ke ${email}`);
+	} catch (err) {
+		console.log("========================================");
+		console.log("⚠️  Gagal kirim email — fallback ke dev mode");
+		console.log("🔗 Link verifikasi:", link);
+		console.log("📧 Untuk:", email);
+		console.log("Error:", err instanceof Error ? err.message : err);
+		console.log("========================================");
+	}
+}
+
+// ---- Verify Email ----
+export async function verifyEmail(c: Context) {
+	const token = c.req.query("token");
+	if (!token) {
+		return c.html(
+			layout(
+				"Verifikasi Gagal",
+				"<p style='text-align:center;padding:40px;color:#dc2626'>Token tidak valid.</p>",
+				null,
+			),
+		);
+	}
+
+	const row = await queryOne<{ email: string; expires_at: string }>(
+		"SELECT email, expires_at FROM verification_tokens WHERE token = ?",
+		[token],
 	);
 
-	setCookie(c, "flash", JSON.stringify({ type: "success", message: `Selamat datang, ${esc(name)}! Akun berhasil dibuat.` }), {
-		httpOnly: true,
-		path: "/",
-		maxAge: 5,
-	});
+	if (!row) {
+		return c.html(
+			layout(
+				"Verifikasi Gagal",
+				"<p style='text-align:center;padding:40px;color:#dc2626'>Token tidak valid atau sudah digunakan.</p>",
+				null,
+			),
+		);
+	}
 
-	return c.redirect("/");
+	if (new Date(row.expires_at) < new Date()) {
+		return c.html(
+			layout(
+				"Verifikasi Gagal",
+				"<p style='text-align:center;padding:40px;color:#dc2626'>Token sudah kedaluwarsa. Daftar ulang untuk mendapat token baru.</p>",
+				null,
+			),
+		);
+	}
+
+	// Update user as verified
+	await query("UPDATE users SET verified_at = NOW() WHERE email = ?", [
+		row.email,
+	]);
+
+	// Clean up used token
+	await query("DELETE FROM verification_tokens WHERE email = ?", [row.email]);
+
+	const html = layout(
+		"Email Terverifikasi",
+		`<div style="text-align:center;padding:40px 20px">
+       <div style="font-size:3rem;margin-bottom:16px">✅</div>
+       <h2>Email Berhasil Diverifikasi!</h2>
+       <p style="color:#4b5563;margin-bottom:24px">Sekarang kamu bisa masuk ke akun kamu.</p>
+       <a href="/login" class="btn btn-primary" style="text-decoration:none">Masuk</a>
+     </div>`,
+		null,
+	);
+
+	return c.html(html);
 }
 
 // ---- Sitemap ----

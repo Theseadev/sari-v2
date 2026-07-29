@@ -41,6 +41,7 @@ app.get("/sariadmin", (c) => auth.adminLoginForm(c));
 app.post("/sariadmin", (c) => auth.adminLogin(c));
 app.get("/register", (c) => auth.registerForm(c));
 app.post("/register", (c) => auth.register(c));
+app.get("/verify-email", (c) => auth.verifyEmail(c));
 app.get("/logout", (c) => auth.logout(c));
 
 // Password Reset

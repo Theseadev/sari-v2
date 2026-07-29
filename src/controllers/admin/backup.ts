@@ -567,7 +567,9 @@ export async function importBackup(c: Context) {
 			writeFileSync(tmpZip, Buffer.from(arrayBuf));
 
 			try {
-				await execAsync(`tar -xf "${tmpZip}" -C "${tmpUnzipDir}"`);
+				await execAsync(
+					`"${process.env.SystemRoot || "C:\\Windows"}\\System32\\tar.exe" -xf "${tmpZip}" -C "${tmpUnzipDir}"`,
+				);
 				const extractedFiles = readdirSync(tmpUnzipDir);
 				const foundSql = extractedFiles.find((f) =>
 					f.toLowerCase().endsWith(".sql"),

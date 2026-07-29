@@ -98,8 +98,8 @@ export async function store(c: Context) {
 
 	const hash = await bcrypt.hash(password, 10);
 	await query(
-		`INSERT INTO users (role_id, username, name, email, password, nim_nip, status)
-   VALUES (?,?,?,?,?,?,?)`,
+		`INSERT INTO users (role_id, username, name, email, password, nim_nip, status, verified_at)
+   VALUES (?,?,?,?,?,?,?, NOW())`,
 		[
 			Number(body.role_id) || 3,
 			username,

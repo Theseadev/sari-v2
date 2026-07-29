@@ -35,6 +35,12 @@ export const APP = {
 	COVER_PATH: `${process.cwd()}/public/uploads/covers/`,
 	JWT_SECRET: jwtSecret,
 	JWT_EXPIRES_IN: "24h",
+	SITE_URL: process.env.SITE_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
+	EMAIL_FROM: process.env.EMAIL_FROM || "SARI <perpustakaansari@gmail.com>",
+	SMTP_HOST: process.env.SMTP_HOST || "smtp.gmail.com",
+	SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
+	SMTP_USER: process.env.SMTP_USER || "",
+	SMTP_PASS: process.env.SMTP_PASS || "",
 };
 
 export const DB = {
