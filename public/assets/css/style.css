@@ -3218,7 +3218,7 @@ input[type="file"]::file-selector-button:hover {
 	background: transparent !important;
 	border: none !important;
 	padding: 0 !important;
-	overflow: visible !important;
+	overflow: hidden !important;
 	box-shadow: none !important;
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;

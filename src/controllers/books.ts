@@ -88,6 +88,9 @@ function getCatalogStyles(): string {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
+        .hero-shelf-card {
+            overflow: hidden !important;
+        }
         
         .hero-catalog h1 {
             font-size: 2.2rem;
