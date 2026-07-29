@@ -3211,18 +3211,17 @@ input[type="file"]::file-selector-button:hover {
 	text-align: left;
 }
 
-/* Left Column: 3D Hardcover Bookshelf (Glass Card Frame & Smooth 3D Geometry) */
+/* Left Column: 3D Hardcover Bookshelf (100% Transparent Container) */
 .hero-shelf-card {
 	position: relative;
 	width: 100%;
-	background: rgba(255, 255, 255, 0.08);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1.5px solid rgba(255, 255, 255, 0.22);
-	border-radius: 20px;
-	padding: 18px 20px 0;
-	overflow: hidden;
-	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	overflow: visible !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
 	display: flex;
 	flex-direction: column;
 }
@@ -3385,11 +3384,10 @@ input[type="file"]::file-selector-button:hover {
 /* 3D Grainy Wood Shelf Ledge */
 .hero-shelf-wood {
 	position: relative;
-	width: calc(100% + 40px);
-	margin-left: -20px;
+	width: 100%;
 	height: 28px;
 	margin-top: -2px;
-	border-radius: 0 0 18px 18px;
+	border-radius: 4px 4px 14px 14px;
 	background: 
 		linear-gradient(180deg, 
 			#92400e 0%, 
