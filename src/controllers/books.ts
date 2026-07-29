@@ -77,8 +77,8 @@ function getCatalogStyles(): string {
             margin-bottom: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        .hero-shelf-card,
         .hero-budi-left,
+        .hero-shelf-card,
         .hero-shelf-viewport,
         .hero-shelf-track {
             background: transparent !important;
@@ -87,9 +87,7 @@ function getCatalogStyles(): string {
             box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-        }
-        .hero-shelf-card {
-            overflow: hidden !important;
+            outline: none !important;
         }
         
         .hero-catalog h1 {
@@ -1106,18 +1104,16 @@ export async function catalog(c: Context) {
                     
                     <!-- COLUMN KIRI: AMBALAN BUKU TERPOPULER (3D SHELF) -->
                     <div class="hero-budi-left">
-                        <div class="hero-shelf-card">
-                            <div class="hero-shelf-header">
-                                <span class="hero-shelf-badge">🔥 Buku Terpopuler</span>
-                            </div>
-                            <div class="hero-shelf-viewport" id="heroShelfViewport">
-                                <div class="hero-shelf-track" id="heroShelfTrack">
-                                    ${popularShelfBooksHtml}
-                                </div>
-                            </div>
-                            <!-- Ambalan Kayu 3D Ledge -->
-                            <div class="hero-shelf-wood"></div>
+                        <div class="hero-shelf-header">
+                            <span class="hero-shelf-badge">🔥 Buku Terpopuler</span>
                         </div>
+                        <div class="hero-shelf-viewport" id="heroShelfViewport">
+                            <div class="hero-shelf-track" id="heroShelfTrack">
+                                ${popularShelfBooksHtml}
+                            </div>
+                        </div>
+                        <!-- Ambalan Kayu 3D Ledge -->
+                        <div class="hero-shelf-wood"></div>
                     </div>
 
                     <!-- COLUMN KANAN: TEXT & BADGES -->
