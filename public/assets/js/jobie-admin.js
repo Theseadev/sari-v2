@@ -148,28 +148,6 @@
 
 	createMobileToggle();
 
-	// Bokeh parallax effect on mouse move
-	const bokehContainer = document.querySelector(".jobie-bokeh");
-	if (
-		bokehContainer &&
-		!window.matchMedia("(prefers-reduced-motion: reduce)").matches
-	) {
-		const bokehItems = bokehContainer.querySelectorAll(".bokeh");
-
-		document.addEventListener("mousemove", (e) => {
-			const { clientX, clientY } = e;
-			const x = (clientX / window.innerWidth - 0.5) * 2;
-			const y = (clientY / window.innerHeight - 0.5) * 2;
-
-			bokehItems.forEach((item, i) => {
-				const factor = (i + 1) * 0.3;
-				const tx = x * 30 * factor;
-				const ty = y * 30 * factor;
-				item.style.transform = `translate(${tx}px, ${ty}px)`;
-			});
-		});
-	}
-
 	// Active nav highlight based on current URL
 	function setActiveNav() {
 		const path = window.location.pathname;

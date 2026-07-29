@@ -106,18 +106,7 @@ export function jobieAdminLayout(
   </aside>
 
   <main class="jobie-main" role="main">
-    <div class="jobie-bg-blur" aria-hidden="true">
-      <div class="jobie-bokeh" aria-hidden="true">
-        <span class="bokeh b1"></span>
-        <span class="bokeh b2"></span>
-        <span class="bokeh b3"></span>
-        <span class="bokeh b4"></span>
-        <span class="bokeh b5"></span>
-        <span class="bokeh b6"></span>
-        <span class="bokeh b7"></span>
-        <span class="bokeh b8"></span>
-      </div>
-    </div>
+    <div class="jobie-bg-blur" aria-hidden="true"></div>
 
     <header class="jobie-topbar" role="banner">
       <div class="jt-left">

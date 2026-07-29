@@ -15,9 +15,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { ZipArchive } from "archiver";
 import type { Context } from "hono";
-import * as archiverModule from "archiver";
-const archiver = (archiverModule as any).default || archiverModule;
 import { utils, write } from "xlsx";
 import { DB } from "../../config/app";
 import { query } from "../../config/database";
@@ -260,7 +259,8 @@ export async function exportBackup(c: Context) {
 
 	const body = await c.req.parseBody();
 	const selectedFormat = String(body.format || "zip").toLowerCase();
-	const fmt = FORMAT_OPTIONS.find((f) => f.value === selectedFormat) || FORMAT_OPTIONS[0];
+	const fmt =
+		FORMAT_OPTIONS.find((f) => f.value === selectedFormat) || FORMAT_OPTIONS[0];
 
 	const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 	const baseName = `sari-backup-${ts}`;
@@ -328,30 +328,48 @@ export async function exportBackup(c: Context) {
 
 			if (has7z) {
 				if (fmt.value === "zip" || fmt.value === "rar" || fmt.value === "lz4") {
-					await execAsync(`"${SEVEN_ZIP}" a -tzip "${outFile}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -tzip "${outFile}" .`, {
+						cwd: tmpDir,
+					});
 				} else if (fmt.value === "7z") {
-					await execAsync(`"${SEVEN_ZIP}" a -t7z "${outFile}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -t7z "${outFile}" .`, {
+						cwd: tmpDir,
+					});
 				} else if (fmt.value === "tar") {
-					await execAsync(`"${SEVEN_ZIP}" a -ttar "${outFile}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -ttar "${outFile}" .`, {
+						cwd: tmpDir,
+					});
 				} else if (fmt.value === "tar.gz" || fmt.value === "gzip") {
 					const tarPath = join(tmpDir, "_tmp.tar");
-					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, {
+						cwd: tmpDir,
+					});
 					await execAsync(`"${SEVEN_ZIP}" a -tgzip "${outFile}" "${tarPath}"`);
 				} else if (fmt.value === "tar.bz2" || fmt.value === "bzip2") {
 					const tarPath = join(tmpDir, "_tmp.tar");
-					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, {
+						cwd: tmpDir,
+					});
 					await execAsync(`"${SEVEN_ZIP}" a -tbzip2 "${outFile}" "${tarPath}"`);
 				} else if (fmt.value === "xz") {
 					const tarPath = join(tmpDir, "_tmp.tar");
-					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, {
+						cwd: tmpDir,
+					});
 					await execAsync(`"${SEVEN_ZIP}" a -txz "${outFile}" "${tarPath}"`);
 				} else if (fmt.value === "zstd") {
 					const tarPath = join(tmpDir, "_tmp.tar");
-					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, { cwd: tmpDir });
+					await execAsync(`"${SEVEN_ZIP}" a -ttar "${tarPath}" .`, {
+						cwd: tmpDir,
+					});
 					try {
-						await execAsync(`"${SEVEN_ZIP}" a -tzstd "${outFile}" "${tarPath}"`);
+						await execAsync(
+							`"${SEVEN_ZIP}" a -tzstd "${outFile}" "${tarPath}"`,
+						);
 					} catch {
-						await execAsync(`"${SEVEN_ZIP}" a -t7z "${outFile}" .`, { cwd: tmpDir });
+						await execAsync(`"${SEVEN_ZIP}" a -t7z "${outFile}" .`, {
+							cwd: tmpDir,
+						});
 					}
 				}
 			} else {
@@ -369,7 +387,11 @@ export async function exportBackup(c: Context) {
 			],
 		);
 
-		setFlash(c, `Backup ${fmt.label} (${outFilename}) berhasil dibuat.`, "success");
+		setFlash(
+			c,
+			`Backup ${fmt.label} (${outFilename}) berhasil dibuat.`,
+			"success",
+		);
 		return c.redirect("/admin/backup");
 	} catch (err: unknown) {
 		const msg = err instanceof Error ? err.message : String(err);
@@ -393,7 +415,7 @@ async function createZipFallback(
 ): Promise<void> {
 	return new Promise<void>((resolve, reject) => {
 		const output = createWriteStream(outFile);
-		const archive = archiver("zip", { zlib: { level: 1 } });
+		const archive = new ZipArchive({ zlib: { level: 1 } });
 
 		output.on("close", () => resolve());
 		archive.on("error", reject);
@@ -455,7 +477,8 @@ function getMimeType(file: string): string {
 	if (f.endsWith(".7z")) return "application/x-7z-compressed";
 	if (f.endsWith(".tar")) return "application/x-tar";
 	if (f.endsWith(".tar.gz") || f.endsWith(".tgz")) return "application/gzip";
-	if (f.endsWith(".tar.bz2") || f.endsWith(".tbz2")) return "application/x-bzip2";
+	if (f.endsWith(".tar.bz2") || f.endsWith(".tbz2"))
+		return "application/x-bzip2";
 	if (f.endsWith(".gz") || f.endsWith(".gzip")) return "application/gzip";
 	if (f.endsWith(".bz2") || f.endsWith(".bzip2")) return "application/x-bzip2";
 	if (f.endsWith(".xz")) return "application/x-xz";
@@ -532,7 +555,9 @@ export async function importBackup(c: Context) {
 			try {
 				await execAsync(`"${SEVEN_ZIP}" x "${tmpZip}" -o"${tmpUnzipDir}" -y`);
 				const extractedFiles = readdirSync(tmpUnzipDir);
-				const foundSql = extractedFiles.find((f) => f.toLowerCase().endsWith(".sql"));
+				const foundSql = extractedFiles.find((f) =>
+					f.toLowerCase().endsWith(".sql"),
+				);
 				if (!foundSql) {
 					throw new Error("File .sql tidak ditemukan di dalam archive ZIP.");
 				}
@@ -560,7 +585,10 @@ export async function importBackup(c: Context) {
 		try {
 			unlinkSync(targetSqlFile);
 			if (lowerName.endsWith(".zip")) {
-				rmSync(join(BACKUP_DIR, `_import_unzip_${ts}`), { recursive: true, force: true });
+				rmSync(join(BACKUP_DIR, `_import_unzip_${ts}`), {
+					recursive: true,
+					force: true,
+				});
 			}
 		} catch {}
 
