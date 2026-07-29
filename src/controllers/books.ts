@@ -1106,10 +1106,6 @@ export async function catalog(c: Context) {
                         <div class="hero-shelf-card">
                             <div class="hero-shelf-header">
                                 <span class="hero-shelf-badge">🔥 Buku Terpopuler</span>
-                                <div class="hero-shelf-controls">
-                                    <button type="button" class="hero-shelf-btn" id="heroShelfPrev" aria-label="Sebelumnya">&lsaquo;</button>
-                                    <button type="button" class="hero-shelf-btn" id="heroShelfNext" aria-label="Selanjutnya">&rsaquo;</button>
-                                </div>
                             </div>
                             <div class="hero-shelf-viewport" id="heroShelfViewport">
                                 <div class="hero-shelf-track" id="heroShelfTrack">
@@ -1160,20 +1156,40 @@ export async function catalog(c: Context) {
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const viewport = document.getElementById('heroShelfViewport');
-                const shelfPrev = document.getElementById('heroShelfPrev');
-                const shelfNext = document.getElementById('heroShelfNext');
-                
                 if (!viewport) return;
 
                 let isDown = false;
                 let startX = 0;
                 let scrollLeft = 0;
                 let isDragging = false;
+                let autoScrollTimer = null;
+
+                // Auto Scroll Handler (Bergulir Otomatis)
+                function startAutoScroll() {
+                    stopAutoScroll();
+                    autoScrollTimer = setInterval(() => {
+                        if (isDown) return;
+                        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+                        if (viewport.scrollLeft >= maxScroll - 10) {
+                            viewport.scrollTo({ left: 0, behavior: 'smooth' });
+                        } else {
+                            viewport.scrollBy({ left: 150, behavior: 'smooth' });
+                        }
+                    }, 3500);
+                }
+
+                function stopAutoScroll() {
+                    if (autoScrollTimer) {
+                        clearInterval(autoScrollTimer);
+                        autoScrollTimer = null;
+                    }
+                }
 
                 // Mouse Drag (Desktop Cursor)
                 viewport.addEventListener('mousedown', (e) => {
                     isDown = true;
                     isDragging = false;
+                    stopAutoScroll();
                     startX = e.pageX - viewport.offsetLeft;
                     scrollLeft = viewport.scrollLeft;
                     viewport.style.cursor = 'grabbing';
@@ -1181,14 +1197,19 @@ export async function catalog(c: Context) {
                 });
 
                 viewport.addEventListener('mouseleave', () => {
-                    isDown = false;
-                    viewport.style.cursor = 'grab';
+                    if (isDown) {
+                        isDown = false;
+                        viewport.style.cursor = 'grab';
+                        viewport.style.scrollBehavior = 'smooth';
+                        startAutoScroll();
+                    }
                 });
 
                 viewport.addEventListener('mouseup', () => {
                     isDown = false;
                     viewport.style.cursor = 'grab';
                     viewport.style.scrollBehavior = 'smooth';
+                    startAutoScroll();
                 });
 
                 viewport.addEventListener('mousemove', (e) => {
@@ -1203,6 +1224,7 @@ export async function catalog(c: Context) {
                 // Touch Swipe (HP / Tablet)
                 viewport.addEventListener('touchstart', (e) => {
                     isDown = true;
+                    stopAutoScroll();
                     startX = e.touches[0].pageX - viewport.offsetLeft;
                     scrollLeft = viewport.scrollLeft;
                     viewport.style.scrollBehavior = 'auto';
@@ -1211,6 +1233,7 @@ export async function catalog(c: Context) {
                 viewport.addEventListener('touchend', () => {
                     isDown = false;
                     viewport.style.scrollBehavior = 'smooth';
+                    startAutoScroll();
                 });
 
                 viewport.addEventListener('touchmove', (e) => {
@@ -1229,20 +1252,8 @@ export async function catalog(c: Context) {
                     }
                 }, true);
 
-                // Prev & Next Buttons
-                if (shelfPrev) {
-                    shelfPrev.addEventListener('click', () => {
-                        viewport.style.scrollBehavior = 'smooth';
-                        viewport.scrollBy({ left: -220, behavior: 'smooth' });
-                    });
-                }
-
-                if (shelfNext) {
-                    shelfNext.addEventListener('click', () => {
-                        viewport.style.scrollBehavior = 'smooth';
-                        viewport.scrollBy({ left: 220, behavior: 'smooth' });
-                    });
-                }
+                // Start auto scrolling on page load
+                startAutoScroll();
             });
         </script>
 
