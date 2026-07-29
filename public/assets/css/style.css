@@ -91,7 +91,7 @@ img {
 	display: block;
 }
 .container {
-	max-width: 1200px;
+	max-width: 1320px;
 	margin: 0 auto;
 	padding: 0 24px;
 }
@@ -103,7 +103,7 @@ img {
 	left: 50%;
 	transform: translateX(-50%);
 	width: calc(100% - 48px);
-	max-width: 1140px;
+	max-width: 1320px;
 	z-index: 100;
 	background: var(--bg-card);
 	border: 1px solid var(--border);
@@ -3196,7 +3196,7 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .hero-budi-container {
-	max-width: 1140px;
+	max-width: 1320px;
 	margin: 0 auto;
 	position: relative;
 	z-index: 2;
@@ -3454,7 +3454,7 @@ input[type="file"]::file-selector-button:hover {
 	margin: -24px auto 36px;
 	position: relative;
 	z-index: 10;
-	max-width: 1140px;
+	max-width: 1320px;
 	padding: 0 24px;
 }
 
@@ -3514,7 +3514,7 @@ input[type="file"]::file-selector-button:hover {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 20px;
-	max-width: 1140px;
+	max-width: 1320px;
 	margin: 0 auto;
 }
 
