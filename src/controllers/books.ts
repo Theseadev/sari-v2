@@ -1111,7 +1111,7 @@ export async function catalog(c: Context) {
                                     <button type="button" class="hero-shelf-btn" id="heroShelfNext" aria-label="Selanjutnya">&rsaquo;</button>
                                 </div>
                             </div>
-                            <div class="hero-shelf-viewport">
+                            <div class="hero-shelf-viewport" id="heroShelfViewport">
                                 <div class="hero-shelf-track" id="heroShelfTrack">
                                     ${popularShelfBooksHtml}
                                 </div>
@@ -1159,34 +1159,89 @@ export async function catalog(c: Context) {
 
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const shelfTrack = document.getElementById('heroShelfTrack');
+                const viewport = document.getElementById('heroShelfViewport');
                 const shelfPrev = document.getElementById('heroShelfPrev');
                 const shelfNext = document.getElementById('heroShelfNext');
                 
-                if (shelfTrack && shelfPrev && shelfNext) {
-                    let shelfIndex = 0;
-                    const totalItems = shelfTrack.children.length;
-                    const maxIndex = Math.max(0, totalItems - 3);
+                if (!viewport) return;
 
-                    function updateShelf() {
-                        shelfTrack.style.transform = 'translateX(-' + (shelfIndex * 33.333) + '%)';
+                let isDown = false;
+                let startX = 0;
+                let scrollLeft = 0;
+                let isDragging = false;
+
+                // Mouse Drag (Desktop Cursor)
+                viewport.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    isDragging = false;
+                    startX = e.pageX - viewport.offsetLeft;
+                    scrollLeft = viewport.scrollLeft;
+                    viewport.style.cursor = 'grabbing';
+                    viewport.style.scrollBehavior = 'auto';
+                });
+
+                viewport.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    viewport.style.cursor = 'grab';
+                });
+
+                viewport.addEventListener('mouseup', () => {
+                    isDown = false;
+                    viewport.style.cursor = 'grab';
+                    viewport.style.scrollBehavior = 'smooth';
+                });
+
+                viewport.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - viewport.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    if (Math.abs(walk) > 5) isDragging = true;
+                    viewport.scrollLeft = scrollLeft - walk;
+                });
+
+                // Touch Swipe (HP / Tablet)
+                viewport.addEventListener('touchstart', (e) => {
+                    isDown = true;
+                    startX = e.touches[0].pageX - viewport.offsetLeft;
+                    scrollLeft = viewport.scrollLeft;
+                    viewport.style.scrollBehavior = 'auto';
+                }, { passive: true });
+
+                viewport.addEventListener('touchend', () => {
+                    isDown = false;
+                    viewport.style.scrollBehavior = 'smooth';
+                });
+
+                viewport.addEventListener('touchmove', (e) => {
+                    if (!isDown) return;
+                    const x = e.touches[0].pageX - viewport.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    viewport.scrollLeft = scrollLeft - walk;
+                }, { passive: true });
+
+                // Prevent opening detail modal if user was dragging
+                viewport.addEventListener('click', (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        isDragging = false;
                     }
+                }, true);
 
+                // Prev & Next Buttons
+                if (shelfPrev) {
                     shelfPrev.addEventListener('click', () => {
-                        shelfIndex = (shelfIndex > 0) ? shelfIndex - 1 : maxIndex;
-                        updateShelf();
+                        viewport.style.scrollBehavior = 'smooth';
+                        viewport.scrollBy({ left: -220, behavior: 'smooth' });
                     });
+                }
 
+                if (shelfNext) {
                     shelfNext.addEventListener('click', () => {
-                        shelfIndex = (shelfIndex < maxIndex) ? shelfIndex + 1 : 0;
-                        updateShelf();
+                        viewport.style.scrollBehavior = 'smooth';
+                        viewport.scrollBy({ left: 220, behavior: 'smooth' });
                     });
-
-                    // Auto slide popular books every 5 seconds
-                    setInterval(() => {
-                        shelfIndex = (shelfIndex < maxIndex) ? shelfIndex + 1 : 0;
-                        updateShelf();
-                    }, 5000);
                 }
             });
         </script>
