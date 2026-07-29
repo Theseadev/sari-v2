@@ -537,10 +537,13 @@ export async function register(c: Context) {
 
 	loginAttempts.delete(ip);
 
+	// Redirect ke halaman utama, muncul sweetalert
+	const referer = c.req.header("referer") || "/buku";
+	const redirectTo = referer.includes("/register") ? "/buku" : referer;
 	return setFlashRedirect(
 		c,
-		"/login",
-		"Akun berhasil dibuat! Cek email kamu untuk verifikasi sebelum login.",
+		redirectTo,
+		"Silahkan cek email anda",
 		"success",
 	);
 }
@@ -564,9 +567,16 @@ async function sendVerificationEmail(email: string, token: string) {
 			from: APP.EMAIL_FROM,
 			to: email,
 			subject: "Verifikasi Email - SARI Perpustakaan Digital",
+			text: `Verifikasi email kamu untuk akun SARI Perpustakaan Digital
+
+Klik link ini:
+${link}
+
+Link berlaku 24 jam.
+Abaikan jika kamu tidak mendaftar.`,
 			html: `
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head><meta charset="utf-8"></head>
 <body style="font-family:sans-serif;background:#f3f4f6;padding:40px 20px">
 <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">
@@ -640,18 +650,42 @@ export async function verifyEmail(c: Context) {
 	// Clean up used token
 	await query("DELETE FROM verification_tokens WHERE email = ?", [row.email]);
 
-	const html = layout(
-		"Email Terverifikasi",
-		`<div style="text-align:center;padding:40px 20px">
-       <div style="font-size:3rem;margin-bottom:16px">✅</div>
-       <h2>Email Berhasil Diverifikasi!</h2>
-       <p style="color:#4b5563;margin-bottom:24px">Sekarang kamu bisa masuk ke akun kamu.</p>
-       <a href="/login" class="btn btn-primary" style="text-decoration:none">Masuk</a>
-     </div>`,
-		null,
+	// Auto-login: cari user & buat token
+	const user = await queryOne<any>(
+		`SELECT u.*, r.name AS role_name
+     FROM users u JOIN roles r ON r.id = u.role_id
+     WHERE u.email = ?`,
+		[row.email],
 	);
 
-	return c.html(html);
+	if (user) {
+		const payload: JwtPayload = {
+			userId: user.id,
+			roleName: user.role_name,
+			name: user.name,
+		};
+		const jwtToken = jwt.sign(payload, APP.JWT_SECRET, {
+			expiresIn: 86400,
+		});
+		setCookie(c, "token", jwtToken, {
+			httpOnly: true,
+			secure: !APP.DEBUG,
+			sameSite: "Lax",
+			path: "/",
+			maxAge: 86400,
+		});
+		setCookie(
+			c,
+			"flash",
+			JSON.stringify({
+				type: "success",
+				message: "Email berhasil diverifikasi! Selamat datang.",
+			}),
+			{ httpOnly: true, path: "/", maxAge: 5 },
+		);
+	}
+
+	return c.redirect("/buku");
 }
 
 // ---- Sitemap ----

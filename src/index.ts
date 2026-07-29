@@ -35,11 +35,11 @@ app.use("/pdfs/*", serveStatic({ root: "storage" }));
 app.use("*", csrfProtection);
 
 // AUTH
-app.get("/login", (c) => auth.loginForm(c));
+app.get("/login", (c) => c.redirect("/buku"));
 app.post("/login", (c) => auth.login(c));
 app.get("/sariadmin", (c) => auth.adminLoginForm(c));
 app.post("/sariadmin", (c) => auth.adminLogin(c));
-app.get("/register", (c) => auth.registerForm(c));
+app.get("/register", (c) => c.redirect("/buku"));
 app.post("/register", (c) => auth.register(c));
 app.get("/verify-email", (c) => auth.verifyEmail(c));
 app.get("/logout", (c) => auth.logout(c));
