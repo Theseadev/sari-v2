@@ -3211,21 +3211,157 @@ input[type="file"]::file-selector-button:hover {
 	text-align: left;
 }
 
-/* Left Column: Slider Card */
-.hero-budi-left {
+/* Left Column: 3D Bookshelf (Ambalan Buku Terpopuler) */
+.hero-shelf-card {
 	position: relative;
 	width: 100%;
+	background: linear-gradient(145deg, rgba(15, 23, 42, 0.65) 0%, rgba(30, 58, 138, 0.5) 100%);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1.5px solid rgba(255, 255, 255, 0.25);
+	border-radius: 20px;
+	padding: 18px 20px 0;
+	overflow: hidden;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+	display: flex;
+	flex-direction: column;
 }
 
-.hero-slider-card {
-	position: relative;
-	width: 100%;
-	border-radius: 20px;
+.hero-shelf-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+	z-index: 5;
+}
+
+.hero-shelf-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	background: rgba(234, 179, 8, 0.22);
+	border: 1px solid rgba(234, 179, 8, 0.45);
+	color: #fef08a;
+	font-size: 0.75rem;
+	font-weight: 800;
+	border-radius: 9999px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.hero-shelf-controls {
+	display: flex;
+	gap: 6px;
+}
+
+.hero-shelf-btn {
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	color: #ffffff;
+	font-size: 1.1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.hero-shelf-btn:hover {
+	background: rgba(255, 255, 255, 0.9);
+	color: #0f172a;
+}
+
+/* Books Track on Shelf */
+.hero-shelf-viewport {
 	overflow: hidden;
-	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-	border: 2px solid rgba(255, 255, 255, 0.3);
-	background: rgba(15, 23, 42, 0.4);
-	aspect-ratio: 6/4;
+	width: 100%;
+	position: relative;
+	z-index: 4;
+}
+
+.hero-shelf-track {
+	display: flex;
+	gap: 16px;
+	transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+	align-items: flex-end;
+	padding: 12px 4px 0;
+}
+
+.hero-shelf-book-item {
+	flex: 0 0 calc(33.333% - 11px);
+	min-width: 100px;
+	cursor: pointer;
+	position: relative;
+	perspective: 800px;
+	transition: transform 0.3s ease;
+}
+
+.hero-shelf-book-cover {
+	aspect-ratio: 3/4;
+	border-radius: 6px 10px 10px 6px;
+	overflow: hidden;
+	box-shadow: -5px 8px 16px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+	transform: rotateY(-8deg);
+	transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	position: relative;
+	background: #1e293b;
+}
+
+.hero-shelf-book-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.hero-shelf-book-item:hover .hero-shelf-book-cover {
+	transform: rotateY(0deg) translateY(-14px) scale(1.06);
+	box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55), 0 0 0 1.5px #60a5fa;
+}
+
+.hero-shelf-book-views {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	background: rgba(15, 23, 42, 0.85);
+	backdrop-filter: blur(4px);
+	color: #fef08a;
+	font-size: 0.62rem;
+	font-weight: 700;
+	padding: 2px 6px;
+	border-radius: 6px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hero-shelf-book-title {
+	font-size: 0.72rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.95);
+	margin-top: 8px;
+	margin-bottom: 4px;
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	line-clamp: 1;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-align: center;
+}
+
+/* Realistic Wooden Shelf Ledge (Ambalan Kayu 3D) */
+.hero-shelf-wood {
+	position: relative;
+	width: calc(100% + 40px);
+	margin-left: -20px;
+	height: 24px;
+	background: linear-gradient(180deg, #854d0e 0%, #713f12 35%, #451a03 100%);
+	border-top: 3.5px solid #ca8a04;
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+	border-radius: 0 0 18px 18px;
+	margin-top: 0;
+	z-index: 10;
 }
 
 .hero-slider-track {

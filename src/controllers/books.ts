@@ -953,6 +953,34 @@ export async function catalog(c: Context) {
         programs = await query<Program[]>("SELECT id, name FROM programs ORDER BY name");
     }
 
+    // Kueri Buku Terpopuler untuk Ambalan Kayu 3D (Shelf)
+    const popularBooks = await query<Book[]>(`
+        SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.views, b.page_count,
+               pr.name AS program_name
+        FROM books b
+        LEFT JOIN programs pr ON pr.id = b.program_id
+        WHERE b.status = 'active'
+        ORDER BY b.views DESC
+        LIMIT 9
+    `);
+
+    let popularShelfBooksHtml = "";
+    for (const pb of popularBooks) {
+        const cover = pb.cover_image 
+            ? `<img src="/uploads/covers/${esc(pb.cover_image)}" alt="Cover ${esc(pb.title)}" loading="lazy">` 
+            : `<div class="cover-placeholder">${ICONS.book}</div>`;
+            
+        popularShelfBooksHtml += `
+            <div class="hero-shelf-book-item budi-book-card" data-slug="${esc(pb.slug)}">
+                <div class="hero-shelf-book-cover">
+                    ${cover}
+                    <span class="hero-shelf-book-views">👁️ ${pb.views}</span>
+                </div>
+                <div class="hero-shelf-book-title" title="${esc(pb.title)}">${esc(pb.title)}</div>
+            </div>
+        `;
+    }
+
     // Render HTML Cards (BUDI-inspired)
     let bookCards = "";
     if (books.length === 0) {
@@ -1058,29 +1086,23 @@ export async function catalog(c: Context) {
             <div class="hero-budi-container">
                 <div class="hero-budi-split">
                     
-                    <!-- COLUMN KIRI: CARD SLIDER BANNER -->
+                    <!-- COLUMN KIRI: AMBALAN BUKU TERPOPULER (3D SHELF) -->
                     <div class="hero-budi-left">
-                        <div class="hero-slider-card">
-                            <div class="hero-slider-track" id="heroSliderTrack">
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-1.svg" alt="Literasi Digital Kampus">
-                                </div>
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-2.svg" alt="4 Fakultas & 12 Prodi">
-                                </div>
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-3.svg" alt="Pembaca Interaktif">
+                        <div class="hero-shelf-card">
+                            <div class="hero-shelf-header">
+                                <span class="hero-shelf-badge">🔥 Buku Terpopuler</span>
+                                <div class="hero-shelf-controls">
+                                    <button type="button" class="hero-shelf-btn" id="heroShelfPrev" aria-label="Sebelumnya">&lsaquo;</button>
+                                    <button type="button" class="hero-shelf-btn" id="heroShelfNext" aria-label="Selanjutnya">&rsaquo;</button>
                                 </div>
                             </div>
-                            <!-- Slider Nav Controls -->
-                            <button type="button" class="hero-slider-btn prev" id="heroSliderPrev" aria-label="Slide Sebelumnya">&lsaquo;</button>
-                            <button type="button" class="hero-slider-btn next" id="heroSliderNext" aria-label="Slide Selanjutnya">&rsaquo;</button>
-                            <!-- Slider Dots -->
-                            <div class="hero-slider-dots" id="heroSliderDots">
-                                <span class="dot active" data-index="0"></span>
-                                <span class="dot" data-index="1"></span>
-                                <span class="dot" data-index="2"></span>
+                            <div class="hero-shelf-viewport">
+                                <div class="hero-shelf-track" id="heroShelfTrack">
+                                    ${popularShelfBooksHtml}
+                                </div>
                             </div>
+                            <!-- Ambalan Kayu 3D Ledge -->
+                            <div class="hero-shelf-wood"></div>
                         </div>
                     </div>
 
@@ -1122,27 +1144,34 @@ export async function catalog(c: Context) {
 
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const track = document.getElementById('heroSliderTrack');
-                const prevBtn = document.getElementById('heroSliderPrev');
-                const nextBtn = document.getElementById('heroSliderNext');
-                const dots = document.querySelectorAll('#heroSliderDots .dot');
+                const shelfTrack = document.getElementById('heroShelfTrack');
+                const shelfPrev = document.getElementById('heroShelfPrev');
+                const shelfNext = document.getElementById('heroShelfNext');
                 
-                if (track && dots.length) {
-                    let currentSlide = 0;
-                    const totalSlides = dots.length;
+                if (shelfTrack && shelfPrev && shelfNext) {
+                    let shelfIndex = 0;
+                    const totalItems = shelfTrack.children.length;
+                    const maxIndex = Math.max(0, totalItems - 3);
 
-                    function goToSlide(index) {
-                        currentSlide = (index + totalSlides) % totalSlides;
-                        track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
-                        dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+                    function updateShelf() {
+                        shelfTrack.style.transform = 'translateX(-' + (shelfIndex * 33.333) + '%)';
                     }
 
-                    if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
-                    if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
-                    dots.forEach((dot, i) => dot.addEventListener('click', () => goToSlide(i)));
+                    shelfPrev.addEventListener('click', () => {
+                        shelfIndex = (shelfIndex > 0) ? shelfIndex - 1 : maxIndex;
+                        updateShelf();
+                    });
 
-                    // Auto slide every 4 seconds
-                    setInterval(() => goToSlide(currentSlide + 1), 4000);
+                    shelfNext.addEventListener('click', () => {
+                        shelfIndex = (shelfIndex < maxIndex) ? shelfIndex + 1 : 0;
+                        updateShelf();
+                    });
+
+                    // Auto slide popular books every 5 seconds
+                    setInterval(() => {
+                        shelfIndex = (shelfIndex < maxIndex) ? shelfIndex + 1 : 0;
+                        updateShelf();
+                    }, 5000);
                 }
             });
         </script>
