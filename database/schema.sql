@@ -141,7 +141,6 @@ CREATE TABLE books (
     description     TEXT            DEFAULT NULL,
     access_type     ENUM('public','internal') NOT NULL DEFAULT 'public',
     file_path       VARCHAR(500)    NOT NULL,   -- path relatif ke storage/pdfs/
-    fliphtml5_book_id VARCHAR(100)  DEFAULT NULL,  -- FlipHTML5 Book ID untuk viewer online
     cover_image     VARCHAR(500)    DEFAULT NULL,-- path relatif ke public/uploads/covers/
     page_count      SMALLINT UNSIGNED DEFAULT 0,
     file_size       INT UNSIGNED    DEFAULT 0,  -- dalam bytes
