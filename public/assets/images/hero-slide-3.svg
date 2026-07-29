@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="50%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(15, 23, 42, 0.85)"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="400" rx="20" fill="url(#g3)"/>
+  <circle cx="100" cy="100" r="120" fill="rgba(255,255,255,0.06)"/>
+
+  <!-- Badge Header -->
+  <rect x="30" y="30" width="310" height="65" rx="32" fill="#d97706" />
+  <text x="50" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" fill="#ffffff">Flipbook &amp; PDF Reader ⚡</text>
+
+  <!-- Title Text -->
+  <text x="35" y="150" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#ffffff">Pengalaman Membaca Modern</text>
+  <text x="35" y="185" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="600" fill="#ddd6fe">Fitur Bookmark, Cari &amp; Pratinjau Cepat.</text>
+
+  <!-- Bottom Dark Gradient Overlay -->
+  <rect y="280" width="600" height="120" rx="0" fill="url(#overlay)"/>
+  <text x="35" y="350" font-family="'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="800" fill="#ffffff">Membaca Nyaman di Semua Perangkat.</text>
+  <text x="35" y="375" font-family="'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500" fill="#ede9fe">Responsif Desktop, Tablet &amp; Smartphone</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="50%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(15, 23, 42, 0.85)"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="400" rx="20" fill="url(#g2)"/>
+  <circle cx="520" cy="300" r="150" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Badge Header -->
+  <rect x="30" y="30" width="340" height="65" rx="32" fill="#0284c7" />
+  <text x="50" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" fill="#ffffff">4 Fakultas &amp; 12 Prodi 🎓</text>
+
+  <!-- Graphics -->
+  <g transform="translate(360, 110)">
+    <circle cx="60" cy="60" r="50" fill="rgba(255,255,255,0.2)"/>
+    <text x="35" y="75" font-size="45">🏥</text>
+    <circle cx="160" cy="110" r="45" fill="rgba(255,255,255,0.2)"/>
+    <text x="140" y="125" font-size="40">💻</text>
+  </g>
+
+  <!-- Title Text -->
+  <text x="35" y="150" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#ffffff">Koleksi Lengkap &amp; Teruji</text>
+  <text x="35" y="185" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="600" fill="#99f6e4">Buku Ajar, Jurnal &amp; Skripsi Resmi.</text>
+
+  <!-- Bottom Dark Gradient Overlay -->
+  <rect y="280" width="600" height="120" rx="0" fill="url(#overlay)"/>
+  <text x="35" y="350" font-family="'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="800" fill="#ffffff">Referensi Utama Perkuliahan.</text>
+  <text x="35" y="375" font-family="'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500" fill="#ccfbf1">Dukungan Mutu Akademis Unggul</text>
+</svg>

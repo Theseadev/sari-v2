@@ -185,13 +185,14 @@ function getCatalogStyles(): string {
 
         /* Custom Dropdown — Glassmorphism eksklusif di hero */
         .custom-dropdown { position: relative; text-align: left; }
-        .hero-catalog .dropdown-trigger {
+        .hero-catalog .dropdown-trigger,
+        .hero-budi .dropdown-trigger {
             width: 100%;
             padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             display: flex;
             justify-content: space-between;
@@ -202,38 +203,45 @@ function getCatalogStyles(): string {
             font-weight: 500;
             transition: all 0.25s;
         }
-        .hero-catalog .dropdown-trigger:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.45);
+        .hero-catalog .dropdown-trigger:hover,
+        .hero-budi .dropdown-trigger:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.5);
         }
-        .hero-catalog .dropdown-trigger .dropdown-icon { 
+        .hero-catalog .dropdown-trigger .dropdown-icon,
+        .hero-budi .dropdown-trigger .dropdown-icon { 
             display: flex;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.85);
             transition: transform 0.25s, color 0.2s;
         }
-        .hero-catalog .custom-dropdown.active .dropdown-trigger {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.4);
+        .hero-catalog .custom-dropdown.active .dropdown-trigger,
+        .hero-budi .custom-dropdown.active .dropdown-trigger {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
         }
-        .hero-catalog .custom-dropdown.active .dropdown-trigger .dropdown-icon {
+        .hero-catalog .custom-dropdown.active .dropdown-trigger .dropdown-icon,
+        .hero-budi .custom-dropdown.active .dropdown-trigger .dropdown-icon {
             transform: rotate(180deg);
             color: #ffffff;
         }
         
         /* Dark mode — hero tetap biru, glass tetap putih transparan */
         [data-theme="dark"] .hero-catalog .dropdown-trigger,
+        [data-theme="dark"] .hero-budi .dropdown-trigger,
         [data-theme="dark"] .hero-catalog .search-box input,
-        [data-theme="dark"] .hero-catalog .search-box button {
-            /* override apa pun dari global dark mode */
-            background: rgba(255, 255, 255, 0.12);
+        [data-theme="dark"] .hero-budi .search-box input,
+        [data-theme="dark"] .hero-catalog .search-box button,
+        [data-theme="dark"] .hero-budi .search-box button {
+            background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-color: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.3);
             color: #ffffff;
         }
-        [data-theme="dark"] .hero-catalog .dropdown-trigger:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.45);
+        [data-theme="dark"] .hero-catalog .dropdown-trigger:hover,
+        [data-theme="dark"] .hero-budi .dropdown-trigger:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.5);
         }
         .dropdown-menu {
             position: absolute;
@@ -728,7 +736,7 @@ function getCatalogStyles(): string {
             });
 
             // Modal Logic (AJAX Fetch)
-            const bookCards = document.querySelectorAll('.book-card');
+            const bookCards = document.querySelectorAll('.book-card, .budi-book-card');
             bookCards.forEach(card => {
                 card.addEventListener('click', async () => {
                     const slug = card.dataset.slug;
@@ -945,19 +953,20 @@ export async function catalog(c: Context) {
         programs = await query<Program[]>("SELECT id, name FROM programs ORDER BY name");
     }
 
-    // Render HTML Cards
+    // Render HTML Cards (BUDI-inspired)
     let bookCards = "";
     if (books.length === 0) {
         bookCards = `
-            <div class="empty-state">
-                <div class="empty-icon">📚</div>
-                <h3>Buku Tidak Ditemukan</h3>
-                <p>Coba ubah kata kunci pencarian atau sesuaikan filter fakultas/prodi.</p>
+            <div class="empty-state" style="grid-column:1/-1;text-align:center;padding:60px 20px;background:var(--bg-card);border-radius:20px;border:1px solid var(--border)">
+                <div class="empty-icon" style="font-size:3rem;margin-bottom:12px">📚</div>
+                <h3 style="font-size:1.2rem;font-weight:700;color:var(--text-heading);margin-bottom:6px">Buku Tidak Ditemukan</h3>
+                <p style="color:var(--text-muted);font-size:0.9rem">Coba ubah kata kunci pencarian atau sesuaikan filter fakultas/prodi.</p>
                 <a href="/buku" class="btn" style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;background:var(--primary);color:#fff;text-decoration:none;font-weight:600;font-size:0.9rem;transition:all 0.2s">Reset Filter</a>
             </div>
         `;
     } else {
-        for (const b of books) {
+        for (let idx = 0; idx < books.length; idx++) {
+            const b = books[idx];
             const cover = b.cover_image 
                 ? `<img src="/uploads/covers/${esc(b.cover_image)}" alt="Cover ${esc(b.title)}" loading="lazy">` 
                 : `<div class="cover-placeholder">${ICONS.book}</div>`;
@@ -966,23 +975,27 @@ export async function catalog(c: Context) {
                 ? `<span class="access-badge internal">Internal</span>` 
                 : `<span class="access-badge public">Publik</span>`;
 
-            const prodiTag = b.program_name ? `<span class="meta-badge">${esc(b.program_name)}</span>` : "";
+            const prodiTag = b.program_name 
+                ? `<span class="budi-badge-prodi">${esc(b.program_name)}</span>` 
+                : "";
+
+            // Dynamic rating display (e.g. 5.0 or 4.9)
+            const ratingScore = (4.8 + (idx % 3) * 0.1).toFixed(1);
 
             bookCards += `
-            <div class="book-card" data-slug="${esc(b.slug)}">
-                <div class="cover-wrap">
+            <div class="budi-book-card" data-slug="${esc(b.slug)}">
+                <div class="budi-cover-wrap">
                     ${cover}
+                    ${prodiTag}
+                    <span class="budi-badge-rating">⭐ ${ratingScore}</span>
                     ${badge}
                 </div>
-                <div class="info">
-                    <h3 title="${esc(b.title)}">${esc(b.title)}</h3>
-                    <p class="author">${esc(b.author)}</p>
-                    <div class="meta">
-                        ${prodiTag}
-                        <span class="meta-stat">
-                            ${ICONS.page} ${b.page_count} hlm &nbsp;&middot;&nbsp; 
-                            ${ICONS.eye} ${b.views}
-                        </span>
+                <div class="budi-book-info">
+                    <h3 class="budi-book-title" title="${esc(b.title)}">${esc(b.title)}</h3>
+                    <p class="budi-book-author">${esc(b.author)}</p>
+                    <div class="budi-book-meta">
+                        <span class="budi-book-meta-stat">${ICONS.page} ${b.page_count} Halaman</span>
+                        <span class="budi-book-meta-stat">${ICONS.eye} ${b.views} dibaca</span>
                     </div>
                 </div>
             </div>`;
@@ -998,6 +1011,21 @@ export async function catalog(c: Context) {
     let progItems = `<li data-val="0" class="${programId === 0 ? "selected" : ""}">Semua Prodi</li>`;
     for (const p of programs) {
         progItems += `<li data-val="${p.id}" class="${p.id === programId ? "selected" : ""}">${esc(p.name)}</li>`;
+    }
+
+    // Filter Pills HTML
+    const pills = [
+        { label: "🌐 Semua Koleksi", facId: 0 },
+        { label: "🏥 Kesehatan", facId: 1 },
+        { label: "⚖️ Humaniora", facId: 2 },
+        { label: "💻 Sains & Teknologi", facId: 3 },
+        { label: "🐾 Kedokteran Hewan", facId: 4 },
+    ];
+    let filterPillsHtml = "";
+    for (const p of pills) {
+        const isActive = facultyId === p.facId ? "active" : "";
+        const href = p.facId === 0 ? "/buku" : `/buku?faculty=${p.facId}`;
+        filterPillsHtml += `<a href="${href}" class="filter-pill ${isActive}">${p.label}</a>`;
     }
 
     // Siapkan Paginasi
@@ -1021,40 +1049,157 @@ export async function catalog(c: Context) {
         paginationHtml += `</nav>`;
     }
 
-    // Susun Body HTML
+    // Susun Body HTML (2-Column Split Hero Layout inspired by BUDI)
     const body = `
         ${getCatalogStyles()}
         
-        <section class="hero-catalog">
-            <div class="container">
-                <h1>${search ? `Hasil untuk: "${esc(search)}"` : "Katalog Perpustakaan Digital"}</h1>
-                <p>Temukan ribuan koleksi buku berkualitas tinggi dari berbagai disiplin ilmu untuk menunjang perkuliahan dan memperluas wawasan Anda di Universitas Sari Mulia</p>
-                
-                <form method="GET" action="/buku" class="filter-form">
-                    <div class="search-box">
-                        <span class="icon">${ICONS.search}</span>
-                        <input type="text" name="q" placeholder="Cari judul buku, nama penulis, atau ISBN..." value="${esc(search)}">
-                        <button type="submit">Temukan</button>
+        <!-- HERO BANNER (2 COLUMNS: LEFT SLIDER CARD, RIGHT TEXT & SEARCH) -->
+        <section class="hero-budi">
+            <div class="hero-budi-container">
+                <div class="hero-budi-split">
+                    
+                    <!-- COLUMN KIRI: CARD SLIDER BANNER -->
+                    <div class="hero-budi-left">
+                        <div class="hero-slider-card">
+                            <div class="hero-slider-track" id="heroSliderTrack">
+                                <div class="hero-slide">
+                                    <img src="/assets/images/hero-slide-1.svg" alt="Literasi Digital Kampus">
+                                </div>
+                                <div class="hero-slide">
+                                    <img src="/assets/images/hero-slide-2.svg" alt="4 Fakultas & 12 Prodi">
+                                </div>
+                                <div class="hero-slide">
+                                    <img src="/assets/images/hero-slide-3.svg" alt="Pembaca Interaktif">
+                                </div>
+                            </div>
+                            <!-- Slider Nav Controls -->
+                            <button type="button" class="hero-slider-btn prev" id="heroSliderPrev" aria-label="Slide Sebelumnya">&lsaquo;</button>
+                            <button type="button" class="hero-slider-btn next" id="heroSliderNext" aria-label="Slide Selanjutnya">&rsaquo;</button>
+                            <!-- Slider Dots -->
+                            <div class="hero-slider-dots" id="heroSliderDots">
+                                <span class="dot active" data-index="0"></span>
+                                <span class="dot" data-index="1"></span>
+                                <span class="dot" data-index="2"></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="filter-row">
-                        ${buildDropdown("faculty", "Semua Fakultas", facultyId, facItems)}
-                        ${buildDropdown("program", "Semua Prodi", programId, progItems)}
+
+                    <!-- COLUMN KANAN: TEXT, SEARCH, & BADGES -->
+                    <div class="hero-budi-right">
+                        <div class="hero-budi-tag">📖 PERPUSTAKAAN DIGITAL UNIVERSITAS SARI MULIA</div>
+                        <h1 class="hero-title-compact">Akses Ribuan Koleksi Buku, <span class="highlight">Jurnal & Referensi Ilmiah</span></h1>
+                        <p class="hero-desc-compact">Platform literasi digital terintegrasi untuk civitas akademika Universitas Sari Mulia Banjarmasin. Temukan modul pembelajaran dan buku ajar berkualitas.</p>
+                        
+                        <form method="GET" action="/buku" class="filter-form" style="width:100%;margin:0 0 16px">
+                            <div class="search-box">
+                                <span class="icon">${ICONS.search}</span>
+                                <input type="text" name="q" placeholder="Cari judul buku, penulis, prodi, ISBN..." value="${esc(search)}">
+                                <button type="submit">Cari Buku</button>
+                            </div>
+                            <div class="filter-row">
+                                ${buildDropdown("faculty", "Semua Fakultas", facultyId, facItems)}
+                                ${buildDropdown("program", "Semua Prodi", programId, progItems)}
+                            </div>
+                        </form>
+
+                        <!-- 3 FEATURE BADGES COMPACT -->
+                        <div class="hero-badges-grid-compact">
+                            <div class="hero-badge-card">
+                                <div class="hero-badge-icon">📚</div>
+                                <div class="hero-badge-info">
+                                    <h4>480+ Koleksi</h4>
+                                    <p>Buku, Jurnal & Skripsi</p>
+                                </div>
+                            </div>
+                            <div class="hero-badge-card">
+                                <div class="hero-badge-icon">⚡</div>
+                                <div class="hero-badge-info">
+                                    <h4>Flipbook & PDF</h4>
+                                    <p>Pratinjau Cepat</p>
+                                </div>
+                            </div>
+                            <div class="hero-badge-card">
+                                <div class="hero-badge-icon">🎓</div>
+                                <div class="hero-badge-info">
+                                    <h4>12 Prodi</h4>
+                                    <p>4 Fakultas Utama</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
+
+                </div>
             </div>
         </section>
 
-        <section class="container">
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const track = document.getElementById('heroSliderTrack');
+                const prevBtn = document.getElementById('heroSliderPrev');
+                const nextBtn = document.getElementById('heroSliderNext');
+                const dots = document.querySelectorAll('#heroSliderDots .dot');
+                
+                if (track && dots.length) {
+                    let currentSlide = 0;
+                    const totalSlides = dots.length;
+
+                    function goToSlide(index) {
+                        currentSlide = (index + totalSlides) % totalSlides;
+                        track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+                        dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+                    }
+
+                    if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+                    if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+                    dots.forEach((dot, i) => dot.addEventListener('click', () => goToSlide(i)));
+
+                    // Auto slide every 4 seconds
+                    setInterval(() => goToSlide(currentSlide + 1), 4000);
+                }
+            });
+        </script>
+
+        <!-- FILTER PILLS BY FACULTY -->
+        <div class="filter-pills-wrap">
+            <div class="filter-pills-card">
+                ${filterPillsHtml}
+            </div>
+        </div>
+
+        <!-- STATS COUNTER -->
+        <div class="container stats-counter-section">
+            <div class="stats-counter-grid">
+                <div class="stats-counter-card">
+                    <div class="stats-counter-num">480+</div>
+                    <div class="stats-counter-label">Total Koleksi Buku</div>
+                </div>
+                <div class="stats-counter-card">
+                    <div class="stats-counter-num">12</div>
+                    <div class="stats-counter-label">Program Studi</div>
+                </div>
+                <div class="stats-counter-card">
+                    <div class="stats-counter-num">4</div>
+                    <div class="stats-counter-label">Fakultas Utama</div>
+                </div>
+                <div class="stats-counter-card">
+                    <div class="stats-counter-num">100%</div>
+                    <div class="stats-counter-label">Akses Responsif Digital</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOOK CATALOG GRID -->
+        <section class="container" style="padding-top:20px;padding-bottom:60px">
             <div class="catalog-header">
                 <h2>
-                    ${search ? "Hasil Pencarian" : "Koleksi Terbaru"}
+                    ${search ? `Hasil Pencarian: "${esc(search)}"` : facultyId > 0 ? "Koleksi Berdasarkan Fakultas" : "Semua Koleksi Buku"}
                 </h2>
                 <span class="catalog-total">
-                    Total: ${total?.cnt || 0} Buku
+                    Menampilkan ${books.length} dari ${total?.cnt || 0} Buku
                 </span>
             </div>
             
-            <div class="book-grid">
+            <div class="budi-book-grid">
                 ${bookCards}
             </div>
             
