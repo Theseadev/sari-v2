@@ -1,6 +1,7 @@
 // src/controllers/admin/jobie.ts — Jobie Admin Controllers
 
-import type { Request, Response } from "express";
+type Request = any;
+type Response = any;
 import { jobieDashboard } from "../../views/admin/jobie-dashboard";
 import { jobieAdminLayout } from "../../views/admin/jobie-helpers";
 

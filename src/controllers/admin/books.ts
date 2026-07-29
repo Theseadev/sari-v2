@@ -154,7 +154,11 @@ export async function store(c: Context) {
 		`INSERT INTO books (program_id, uploaded_by, title, slug, author,
       publisher, publication_year, isbn, description, access_type,
       file_path, cover_image, page_count, file_size)
+<<<<<<< HEAD
    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+=======
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+>>>>>>> 443e6432c81bf34a388492215f3ab35ff6c8279d
 		[
 			programId,
 			user.userId,
