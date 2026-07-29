@@ -28,7 +28,6 @@ export interface Book {
 	description: string | null;
 	access_type: "public" | "internal";
 	file_path: string;
-	fliphtml5_book_id: string | null;
 	cover_image: string | null;
 	page_count: number;
 	file_size: number;

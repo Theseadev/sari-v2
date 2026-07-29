@@ -250,7 +250,6 @@ export function bookForm(
 		program_id?: number | null;
 		cover_image?: string | string | null;
 		page_count?: number;
-		fliphtml5_book_id?: string;
 	} | null,
 ): string {
 	const isEdit = !!book?.id;
@@ -320,8 +319,6 @@ export function bookForm(
     </div>
 
     ${!isEdit ? '<div class="form-group"><label for="pdf_file">File PDF *</label><input type="file" id="pdf_file" name="pdf_file" class="form-control" accept=".pdf" required></div>' : ""}
-
-    ${inputField("FlipHTML5 Book ID", "fliphtml5_book_id", book?.fliphtml5_book_id ?? "", { placeholder: "ID dari FlipHTML5 (opsional)" })}
 
     <div style="display:flex;gap:12px;margin-top:20px">
       <button type="submit" class="btn btn-primary">${isEdit ? "Simpan Perubahan" : "Upload Buku"}</button>

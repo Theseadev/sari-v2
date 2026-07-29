@@ -1,6 +1,8 @@
 // src/config/app.ts - Konfigurasi aplikasi
 
-// .env loading: optional, uncomment jika pakai dotenv
+try {
+	process.loadEnvFile();
+} catch {}
 
 const DEFAULT_JWT_SECRET = "sari-v2-dev-secret-change-in-production";
 const jwtSecret = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
