@@ -15,6 +15,7 @@ import * as usersCrud from "./controllers/admin/users";
 import * as facsCrud from "./controllers/admin/faculties";
 import * as progsCrud from "./controllers/admin/programs";
 import * as catsCrud from "./controllers/admin/categories";
+import * as backupCtrl from "./controllers/admin/backup";
 import * as termCtrl from "./controllers/admin/terminal";
 import * as password from "./controllers/password";
 import * as profile from "./controllers/profile";
@@ -117,6 +118,13 @@ app.get("/api/openlibrary/search", (c) => olCtrl.search(c));
 app.get("/api/openlibrary/isbn/:isbn", (c) => olCtrl.byIsbn(c));
 app.get("/api/openlibrary/cover", (c) => olCtrl.coverProxy(c));
 app.post("/api/translate", (c) => olCtrl.translate(c));
+
+// Backup (super_admin only)
+app.get("/admin/backup", (c) => backupCtrl.page(c));
+app.post("/admin/backup/export", (c) => backupCtrl.exportBackup(c));
+app.get("/admin/backup/download/:file", (c) => backupCtrl.download(c));
+app.post("/admin/backup/delete", (c) => backupCtrl.remove(c));
+app.post("/admin/backup/import", (c) => backupCtrl.importBackup(c));
 
 // Terminal (super_admin only)
 app.get("/admin/terminal", (c) => termCtrl.terminalPage(c));

@@ -74,8 +74,8 @@ export async function terminalPage(c: Context) {
   }
   .term-body {
     padding: 20px;
-    min-height: 400px;
-    max-height: 500px;
+    min-height: 250px;
+    max-height: 250px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #475569 #0f172a;
