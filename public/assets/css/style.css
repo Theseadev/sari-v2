@@ -3280,27 +3280,30 @@ input[type="file"]::file-selector-button:hover {
 	transform: translateY(-2px);
 }
 
-/* Viewport for Standing 3D Books on Shelf */
+/* Viewport for Standing 3D Books on Shelf (Clipped to Left Column) */
 .hero-shelf-viewport {
-	overflow: visible;
+	overflow: hidden;
 	width: 100%;
 	position: relative;
 	z-index: 4;
-	padding: 10px 4px 0;
+	padding: 12px 6px 0;
+	border-radius: 12px 12px 0 0;
 }
 
 .hero-shelf-track {
 	display: flex;
-	gap: 18px;
+	gap: 14px;
 	transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 	align-items: flex-end;
-	perspective: 1000px;
+	perspective: 800px;
 	transform-style: preserve-3d;
+	padding-bottom: 2px;
 }
 
 .hero-shelf-book-item {
-	flex: 0 0 calc(33.333% - 12px);
-	min-width: 95px;
+	flex: 0 0 calc(33.333% - 10px);
+	max-width: calc(33.333% - 10px);
+	min-width: 0;
 	cursor: pointer;
 	position: relative;
 	transform-style: preserve-3d;
@@ -3310,14 +3313,14 @@ input[type="file"]::file-selector-button:hover {
 	aspect-ratio: 3/4.2;
 	border-radius: 4px 8px 8px 4px;
 	overflow: hidden;
-	transform: rotateY(-20deg) rotateX(3deg);
+	transform: rotateY(-18deg) rotateX(2deg);
 	transform-origin: bottom center;
 	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, filter 0.3s ease;
 	position: relative;
 	background: #1e293b;
 	box-shadow: 
-		-10px 14px 22px rgba(0, 0, 0, 0.6),
-		-2px 3px 6px rgba(0, 0, 0, 0.4),
+		-8px 12px 18px rgba(0, 0, 0, 0.55),
+		-2px 2px 5px rgba(0, 0, 0, 0.35),
 		inset 2px 0 4px rgba(255, 255, 255, 0.3);
 	border-left: 2px solid rgba(255, 255, 255, 0.35);
 }
@@ -3330,33 +3333,33 @@ input[type="file"]::file-selector-button:hover {
 
 /* Hover Effect: NO ZOOM SCALING, just subtle 3D lift & lighting */
 .hero-shelf-book-item:hover .hero-shelf-book-cover {
-	transform: rotateY(-6deg) rotateX(0deg) translateY(-6px);
+	transform: rotateY(-4deg) rotateX(0deg) translateY(-4px);
 	box-shadow: 
-		-6px 16px 28px rgba(0, 0, 0, 0.7),
-		0 0 16px rgba(96, 165, 250, 0.45);
+		-4px 14px 22px rgba(0, 0, 0, 0.65),
+		0 0 14px rgba(96, 165, 250, 0.45);
 	filter: brightness(1.08);
 }
 
 .hero-shelf-book-views {
 	position: absolute;
-	top: 6px;
-	right: 6px;
+	top: 5px;
+	right: 5px;
 	background: rgba(15, 23, 42, 0.88);
 	backdrop-filter: blur(6px);
 	color: #fef08a;
-	font-size: 0.64rem;
+	font-size: 0.62rem;
 	font-weight: 800;
-	padding: 3px 7px;
+	padding: 2px 6px;
 	border-radius: 6px;
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 	border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .hero-shelf-book-title {
-	font-size: 0.75rem;
+	font-size: 0.72rem;
 	font-weight: 700;
 	color: #ffffff;
-	margin-top: 10px;
+	margin-top: 8px;
 	margin-bottom: 2px;
 	display: -webkit-box;
 	-webkit-line-clamp: 1;
@@ -3371,8 +3374,8 @@ input[type="file"]::file-selector-button:hover {
 .hero-shelf-wood {
 	position: relative;
 	width: 100%;
-	height: 28px;
-	margin-top: -8px;
+	height: 26px;
+	margin-top: -4px;
 	border-radius: 4px 4px 14px 14px;
 	background: 
 		linear-gradient(180deg, 
@@ -3384,8 +3387,8 @@ input[type="file"]::file-selector-button:hover {
 		);
 	border-top: 4px solid #f59e0b;
 	box-shadow: 
-		0 20px 40px rgba(0, 0, 0, 0.65),
-		0 6px 16px rgba(0, 0, 0, 0.45),
+		0 18px 36px rgba(0, 0, 0, 0.6),
+		0 4px 12px rgba(0, 0, 0, 0.4),
 		inset 0 2px 3px rgba(255, 255, 255, 0.4),
 		inset 0 -2px 5px rgba(0, 0, 0, 0.7);
 	z-index: 10;
