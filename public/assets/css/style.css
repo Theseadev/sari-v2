@@ -9,9 +9,9 @@
 	--accent-light: #fff7ed;
 	--success: #16a34a;
 	--danger: #dc2626;
-	--bg: #f1f5f9;
+	--bg: #f3f4f6;
 	--bg-card: #ffffff;
-	--bg-elevated: #e2e8f0;
+	--bg-elevated: #e5e7eb;
 	--bg-warm: #fff7ed;
 	--border: #e2e8f0;
 	--border-light: #f1f5f9;
@@ -2098,7 +2098,6 @@ input[type="file"]::file-selector-button:hover {
 }
 .dash-table-wrap {
 	overflow-x: auto;
-	overflow-y: auto;
 	flex: 1;
 	min-height: 0;
 }
@@ -2127,14 +2126,13 @@ input[type="file"]::file-selector-button:hover {
 	background: var(--bg-card);
 }
 .dash-table th {
-	font-weight: 600;
-	color: var(--text-dim);
+	font-weight: 700;
+	color: #fff;
 	font-size: 0.68rem;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
-	background: var(--bg-elevated);
-	color: var(--text);
-	border-bottom: 1px solid var(--border);
+	background: #6996b4;
+	border-bottom: 1px solid #5a87a3;
 }
 .dash-table tbody tr {
 	transition: background 0.15s ease;

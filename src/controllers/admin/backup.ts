@@ -158,7 +158,8 @@ ${
     </form>
     <small style="color:var(--text-muted,#6b7280);line-height:1.4;display:block">
       • <strong>ZIP (Default)</strong>: Paket lengkap (Database SQL + Cover + Buku PDF + Data Excel).<br>
-      • <strong>Opsi Lain</strong>: .sql, .rar, .7z, .tar, .tar.gz, .tar.bz2, .gz, .bz2, .xz, .zst, .lz4.
+      • <strong>SQL</strong>: Hanya database — file cover & PDF <strong>tidak</strong> disertakan. Import SQL hanya mengembalikan data, bukan file.<br>
+      • <strong>Opsi Lain</strong>: .rar, .7z, .tar, .tar.gz, .tar.bz2, .gz, .bz2, .xz, .zst, .lz4.
     </small>
   </div>
 
@@ -168,7 +169,7 @@ ${
       <input type="hidden" name="_csrf" value="${esc(csrf)}">
       <div class="upload-zone" id="uploadZone">
         <input type="file" name="backup" id="backupFile" accept=".sql,.zip">
-        <div style="color:var(--text-muted,#6b7280);font-size:0.9rem">Pilih file .sql atau .zip</div>
+        <div class="zone-text" style="color:var(--text-muted,#6b7280);font-size:0.9rem">Pilih file .sql atau .zip</div>
       </div>
       <button type="submit" class="backup-btn import" id="importBtn" disabled>Import</button>
     </form>
@@ -228,8 +229,8 @@ fileInput.addEventListener('change', updateZone);
 function updateZone() {
   if (fileInput.files.length > 0) {
     const f = fileInput.files[0];
-    zone.innerHTML = '<input type="file" name="backup" id="backupFile" accept=".sql,.zip" style="display:none">' +
-      '<div style="color:var(--text-muted,#6b7280);font-size:0.9rem"><strong>' + f.name + '</strong> (' + formatSize(f.size) + ')</div>';
+    const txt = zone.querySelector('.zone-text') || zone;
+    txt.innerHTML = '<strong>' + f.name + '</strong> (' + formatSize(f.size) + ')';
     importBtn.disabled = false;
   }
 }
@@ -280,6 +281,19 @@ export async function exportBackup(c: Context) {
 
 		if (fmt.value === "sql") {
 			writeFileSync(outFile, readFileSync(dumpFile));
+			// Simpan file pendamping (Cover & Buku) di folder terpisah
+			const filesDir = join(BACKUP_DIR, `${baseName}_files`);
+			if (!existsSync(filesDir)) mkdirSync(filesDir, { recursive: true });
+			if (existsSync(COVERS_DIR)) {
+				const coverDest = join(filesDir, "Cover");
+				mkdirSync(coverDest, { recursive: true });
+				cpSync(COVERS_DIR, coverDest, { recursive: true });
+			}
+			if (existsSync(PDFS_DIR)) {
+				const pdfDest = join(filesDir, "Buku");
+				mkdirSync(pdfDest, { recursive: true });
+				cpSync(PDFS_DIR, pdfDest, { recursive: true });
+			}
 		} else {
 			// Query all books for Excel export
 			const books = await query<BookRow[]>(
@@ -553,7 +567,7 @@ export async function importBackup(c: Context) {
 			writeFileSync(tmpZip, Buffer.from(arrayBuf));
 
 			try {
-				await execAsync(`"${SEVEN_ZIP}" x "${tmpZip}" -o"${tmpUnzipDir}" -y`);
+				await execAsync(`tar -xf "${tmpZip}" -C "${tmpUnzipDir}"`);
 				const extractedFiles = readdirSync(tmpUnzipDir);
 				const foundSql = extractedFiles.find((f) =>
 					f.toLowerCase().endsWith(".sql"),
@@ -574,13 +588,49 @@ export async function importBackup(c: Context) {
 				return c.redirect("/admin/backup");
 			}
 		} else {
+			// Simpan .sql ke BACKUP_DIR, lalu cari folder pendamping
+			const sqlName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+			targetSqlFile = join(BACKUP_DIR, sqlName);
 			writeFileSync(targetSqlFile, Buffer.from(arrayBuf));
 		}
 
+		// Import SQL
 		const { mysql } = getMysqlBin();
 		const passArg = DB.password ? ` "-p${DB.password}"` : "";
 		const importCmd = `"${mysql}" -h ${DB.host} -P ${DB.port} -u ${DB.user}${passArg} ${DB.database} < "${targetSqlFile}"`;
 		await execAsync(importCmd, { timeout: 300000 });
+
+		// Restore files dari ZIP (Cover & Buku)
+		if (lowerName.endsWith(".zip")) {
+			const unzipDir = join(BACKUP_DIR, `_import_unzip_${ts}`);
+			const coverSrc = join(unzipDir, "Cover");
+			const pdfSrc = join(unzipDir, "Buku");
+			if (existsSync(coverSrc)) {
+				if (!existsSync(COVERS_DIR)) mkdirSync(COVERS_DIR, { recursive: true });
+				cpSync(coverSrc, COVERS_DIR, { recursive: true, force: true });
+			}
+			if (existsSync(pdfSrc)) {
+				if (!existsSync(PDFS_DIR)) mkdirSync(PDFS_DIR, { recursive: true });
+				cpSync(pdfSrc, PDFS_DIR, { recursive: true, force: true });
+			}
+		} else if (lowerName.endsWith(".sql")) {
+			// Cari folder pendamping _files (hasil export SQL)
+			const base = targetSqlFile.replace(/\.sql$/, "");
+			const filesDir = base + "_files";
+			if (existsSync(filesDir)) {
+				const coverSrc = join(filesDir, "Cover");
+				const pdfSrc = join(filesDir, "Buku");
+				if (existsSync(coverSrc)) {
+					if (!existsSync(COVERS_DIR))
+						mkdirSync(COVERS_DIR, { recursive: true });
+					cpSync(coverSrc, COVERS_DIR, { recursive: true, force: true });
+				}
+				if (existsSync(pdfSrc)) {
+					if (!existsSync(PDFS_DIR)) mkdirSync(PDFS_DIR, { recursive: true });
+					cpSync(pdfSrc, PDFS_DIR, { recursive: true, force: true });
+				}
+			}
+		}
 
 		try {
 			unlinkSync(targetSqlFile);
