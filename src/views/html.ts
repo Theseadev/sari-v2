@@ -51,7 +51,7 @@ export function layout(
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(ogImage)}">
-<link rel="stylesheet" href="/assets/css/style.css?v=5">
+<link rel="stylesheet" href="/assets/css/style.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <meta name="csrf-token" content="${esc(csrfToken())}">
 </head>
@@ -275,7 +275,7 @@ export function sariadminLayout(
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(ogImage)}">
-<link rel="stylesheet" href="/assets/css/style.css?v=5">
+<link rel="stylesheet" href="/assets/css/style.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <meta name="csrf-token" content="${esc(csrfToken())}">
 <style>
