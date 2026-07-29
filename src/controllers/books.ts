@@ -77,6 +77,18 @@ function getCatalogStyles(): string {
             margin-bottom: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
+        .hero-shelf-card,
+        .hero-budi-left,
+        .hero-shelf-viewport,
+        .hero-shelf-track {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        
         .hero-catalog h1 {
             font-size: 2.2rem;
             margin-bottom: 8px;
