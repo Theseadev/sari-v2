@@ -3211,7 +3211,7 @@ input[type="file"]::file-selector-button:hover {
 	text-align: left;
 }
 
-/* Left Column: 3D Bookshelf (Ambalan Buku Terpopuler - Transparent Card) */
+/* Left Column: 3D Hardcover Bookshelf (100% Match to Reference Image) */
 .hero-shelf-card {
 	position: relative;
 	width: 100%;
@@ -3228,7 +3228,7 @@ input[type="file"]::file-selector-button:hover {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 16px;
+	margin-bottom: 24px;
 	z-index: 5;
 }
 
@@ -3280,49 +3280,58 @@ input[type="file"]::file-selector-button:hover {
 	transform: translateY(-2px);
 }
 
-/* Viewport for Standing 3D Books on Shelf (Clipped to Left Column) */
+/* Viewport for Standing 3D Books on Shelf */
 .hero-shelf-viewport {
 	overflow: hidden;
 	width: 100%;
 	position: relative;
 	z-index: 4;
-	padding: 12px 6px 0;
+	padding: 24px 10px 0;
 	border-radius: 12px 12px 0 0;
 }
 
 .hero-shelf-track {
 	display: flex;
-	gap: 14px;
-	transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+	gap: 20px;
+	transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 	align-items: flex-end;
-	perspective: 800px;
+	perspective: 1200px;
 	transform-style: preserve-3d;
 	padding-bottom: 2px;
 }
 
 .hero-shelf-book-item {
-	flex: 0 0 calc(33.333% - 10px);
-	max-width: calc(33.333% - 10px);
+	flex: 0 0 calc(33.333% - 14px);
+	max-width: calc(33.333% - 14px);
 	min-width: 0;
 	cursor: pointer;
 	position: relative;
-	transform-style: preserve-3d;
+	perspective: 1200px;
 }
 
-.hero-shelf-book-cover {
-	aspect-ratio: 3/4.2;
-	border-radius: 4px 8px 8px 4px;
-	overflow: hidden;
-	transform: rotateY(-18deg) rotateX(2deg);
-	transform-origin: bottom center;
-	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, filter 0.3s ease;
+/* 3D Hardcover Book Model */
+.hero-shelf-book-3d {
 	position: relative;
-	background: #1e293b;
+	width: 100%;
+	aspect-ratio: 1 / 1.44;
+	transform-style: preserve-3d;
+	transform: rotateY(-25deg) rotateX(2deg);
+	transform-origin: bottom center;
+	transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+/* Front Cover */
+.hero-shelf-book-cover {
+	position: absolute;
+	inset: 0;
+	border-radius: 2px 6px 6px 2px;
+	overflow: hidden;
+	background: #0f172a;
 	box-shadow: 
-		-8px 12px 18px rgba(0, 0, 0, 0.55),
-		-2px 2px 5px rgba(0, 0, 0, 0.35),
-		inset 2px 0 4px rgba(255, 255, 255, 0.3);
-	border-left: 2px solid rgba(255, 255, 255, 0.35);
+		-14px 16px 24px rgba(0, 0, 0, 0.65),
+		-3px 3px 8px rgba(0, 0, 0, 0.45),
+		inset 2px 0 3px rgba(255, 255, 255, 0.25);
+	border-left: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .hero-shelf-book-cover img {
@@ -3331,70 +3340,69 @@ input[type="file"]::file-selector-button:hover {
 	object-fit: cover;
 }
 
-/* Hover Effect: NO ZOOM SCALING, just subtle 3D lift & lighting */
-.hero-shelf-book-item:hover .hero-shelf-book-cover {
-	transform: rotateY(-4deg) rotateX(0deg) translateY(-4px);
-	box-shadow: 
-		-4px 14px 22px rgba(0, 0, 0, 0.65),
-		0 0 14px rgba(96, 165, 250, 0.45);
-	filter: brightness(1.08);
-}
-
-.hero-shelf-book-views {
+/* 3D Black Book Spine (Punggung Buku 3D Sisi Kiri) */
+.hero-shelf-book-spine {
 	position: absolute;
-	top: 5px;
-	right: 5px;
-	background: rgba(15, 23, 42, 0.88);
-	backdrop-filter: blur(6px);
-	color: #fef08a;
-	font-size: 0.62rem;
-	font-weight: 800;
-	padding: 2px 6px;
-	border-radius: 6px;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-	border: 1px solid rgba(255, 255, 255, 0.15);
+	top: 0;
+	left: -12px;
+	width: 12px;
+	height: 100%;
+	background: linear-gradient(90deg, #090d16 0%, #1e293b 70%, #0f172a 100%);
+	transform: rotateY(-90deg);
+	transform-origin: right center;
+	border-radius: 3px 0 0 3px;
+	box-shadow: inset 1px 0 2px rgba(255, 255, 255, 0.2);
 }
 
-.hero-shelf-book-title {
-	font-size: 0.72rem;
-	font-weight: 700;
-	color: #ffffff;
-	margin-top: 8px;
-	margin-bottom: 2px;
-	display: -webkit-box;
-	-webkit-line-clamp: 1;
-	line-clamp: 1;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-	text-align: center;
-	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+/* Top Page Edge (Ketebalan Kertas Atas) */
+.hero-shelf-book-top {
+	position: absolute;
+	top: -10px;
+	left: 0;
+	width: 100%;
+	height: 10px;
+	background: linear-gradient(90deg, #cbd5e1 0%, #f1f5f9 100%);
+	transform: rotateX(90deg);
+	transform-origin: bottom center;
+	border-radius: 2px 4px 0 0;
 }
 
-/* Realistic 3D Grainy Wood Shelf Ledge (Ambalan Kayu Beserat 3D) */
+/* Hover Animation: Smooth 3D tilt towards viewer without scaling out of bounds */
+.hero-shelf-book-item:hover .hero-shelf-book-3d {
+	transform: rotateY(-8deg) rotateX(0deg) translateY(-8px);
+	filter: brightness(1.1);
+}
+
+.hero-shelf-book-item:hover .hero-shelf-book-cover {
+	box-shadow: 
+		-8px 18px 30px rgba(0, 0, 0, 0.75),
+		0 0 20px rgba(96, 165, 250, 0.5);
+}
+
+/* 3D Grainy Wood Shelf Ledge (Ambalan Kayu 3D Beserat) */
 .hero-shelf-wood {
 	position: relative;
 	width: 100%;
-	height: 26px;
-	margin-top: -4px;
+	height: 30px;
+	margin-top: -2px;
 	border-radius: 4px 4px 14px 14px;
 	background: 
 		linear-gradient(180deg, 
-			#d97706 0%, 
-			#b45309 18%, 
-			#78350f 40%, 
-			#451a03 75%, 
+			#92400e 0%, 
+			#78350f 20%, 
+			#451a03 55%, 
 			#290f02 100%
 		);
-	border-top: 4px solid #f59e0b;
+	border-top: 4px solid #d97706;
 	box-shadow: 
-		0 18px 36px rgba(0, 0, 0, 0.6),
-		0 4px 12px rgba(0, 0, 0, 0.4),
-		inset 0 2px 3px rgba(255, 255, 255, 0.4),
-		inset 0 -2px 5px rgba(0, 0, 0, 0.7);
+		0 20px 40px rgba(0, 0, 0, 0.7),
+		0 6px 16px rgba(0, 0, 0, 0.5),
+		inset 0 2px 4px rgba(255, 255, 255, 0.45),
+		inset 0 -3px 6px rgba(0, 0, 0, 0.8);
 	z-index: 10;
 }
 
-/* Wood Grain Texture Lines (Serat Kayu 3D) */
+/* Wood Grain Texture Pattern */
 .hero-shelf-wood::before {
 	content: '';
 	position: absolute;
@@ -3404,12 +3412,12 @@ input[type="file"]::file-selector-button:hover {
 	bottom: 0;
 	background: repeating-linear-gradient(
 		90deg,
-		rgba(255, 255, 255, 0.04) 0px,
-		rgba(255, 255, 255, 0.04) 2px,
+		rgba(255, 255, 255, 0.05) 0px,
+		rgba(255, 255, 255, 0.05) 2px,
 		transparent 2px,
 		transparent 14px,
-		rgba(0, 0, 0, 0.2) 14px,
-		rgba(0, 0, 0, 0.2) 17px
+		rgba(0, 0, 0, 0.25) 14px,
+		rgba(0, 0, 0, 0.25) 17px
 	);
 	pointer-events: none;
 	border-radius: 4px 4px 14px 14px;

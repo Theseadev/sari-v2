@@ -1,7 +1,8 @@
 // src/controllers/books.ts - Katalog, detail, flip-book reader
 // Versi Komprehensif (UI/UX Lengkap, JSDoc, CSS/JS Inline Terintegrasi)
 
-import type { Context } from "hono";
+import { Context } from "hono";
+// Controller Buku & Catalog (Universitas Sari Mulia)
 import { query, queryOne } from "../config/database";
 import type { Book, Faculty, Program } from "../types";
 import { esc, getUser, getFlash } from "../helpers";
@@ -971,12 +972,14 @@ export async function catalog(c: Context) {
             : `<div class="cover-placeholder">${ICONS.book}</div>`;
             
         popularShelfBooksHtml += `
-            <div class="hero-shelf-book-item budi-book-card" data-slug="${esc(pb.slug)}">
-                <div class="hero-shelf-book-cover">
-                    ${cover}
-                    <span class="hero-shelf-book-views">👁️ ${pb.views}</span>
+            <div class="hero-shelf-book-item" data-slug="${esc(pb.slug)}" title="${esc(pb.title)} (${pb.views}x dibaca)">
+                <div class="hero-shelf-book-3d">
+                    <div class="hero-shelf-book-spine"></div>
+                    <div class="hero-shelf-book-cover">
+                        ${cover}
+                    </div>
+                    <div class="hero-shelf-book-top"></div>
                 </div>
-                <div class="hero-shelf-book-title" title="${esc(pb.title)}">${esc(pb.title)}</div>
             </div>
         `;
     }
