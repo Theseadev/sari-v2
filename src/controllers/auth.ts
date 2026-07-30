@@ -489,7 +489,7 @@ export async function register(c: Context) {
 	if (existing && !existing.verified_at) {
 		// Resend verification for unverified account
 		const token = crypto.randomBytes(32).toString("hex");
-		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000);
 		await query(
 			"INSERT INTO verification_tokens (email, token, expires_at) VALUES (?, ?, ?)",
 			[email, token, expiresAt],
@@ -526,7 +526,7 @@ export async function register(c: Context) {
 
 	// Generate verification token
 	const token = crypto.randomBytes(32).toString("hex");
-	const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+	const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000);
 	await query(
 		"INSERT INTO verification_tokens (email, token, expires_at) VALUES (?, ?, ?)",
 		[email, token, expiresAt],
@@ -572,7 +572,7 @@ async function sendVerificationEmail(email: string, token: string) {
 Klik link ini:
 ${link}
 
-Link berlaku 24 jam.
+Link berlaku 3 jam.
 Abaikan jika kamu tidak mendaftar.`,
 			html: `
 <!DOCTYPE html>
@@ -587,7 +587,7 @@ Abaikan jika kamu tidak mendaftar.`,
 <h2 style="margin:0 0 12px;font-size:1.1rem">Verifikasi Email</h2>
 <p style="color:#4b5563;line-height:1.6;margin:0 0 24px">Klik tombol di bawah untuk verifikasi akun kamu:</p>
 <a href="${link}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">Verifikasi Email</a>
-<p style="color:#9ca3af;font-size:0.85rem;margin-top:24px">Link berlaku 24 jam. Abaikan jika kamu tidak mendaftar.</p>
+<p style="color:#9ca3af;font-size:0.85rem;margin-top:24px">Link berlaku 3 jam. Abaikan jika kamu tidak mendaftar.</p>
 </div>
 </div>
 </body>

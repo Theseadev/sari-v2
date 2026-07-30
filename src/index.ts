@@ -46,6 +46,8 @@ app.get("/logout", (c) => auth.logout(c));
 
 // Password Reset
 
+app.post("/api/forgot-password", (c) => password.apiForgot(c));
+app.post("/api/reset-password", (c) => password.apiReset(c));
 app.get("/reset-password", (c) => password.resetForm(c));
 app.post("/reset-password", (c) => password.reset(c));
 

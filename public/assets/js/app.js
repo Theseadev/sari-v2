@@ -526,4 +526,133 @@ document.addEventListener("DOMContentLoaded", function () {
 			}
 		});
 	}
+
+	// Handle logout via fetch agar tidak mendarat di /logout
+	document.querySelectorAll(".dd-logout, .ahb-logout, .jt-btn.jt-logout").forEach(function(link) {
+		link.addEventListener("click", function(e) {
+			e.preventDefault();
+			fetch(this.href, { method: "GET", credentials: "same-origin" }).then(function() {
+				window.location.href = "/buku";
+			});
+		});
+	});
+
+	// --- Forgot & Reset Password ---
+	function showAuthPanel(panelId) {
+		var header = authModal.querySelector(".am-header");
+		var tabs = authModal.querySelector(".am-tabs");
+		if (panelId === "panel-login" || panelId === "panel-register") {
+			header.style.display = "";
+			tabs.style.display = "";
+			switchAuthTab(panelId.replace("panel-", ""));
+		} else {
+			header.style.display = "none";
+			tabs.style.display = "none";
+			authModal.querySelectorAll(".am-panel").forEach(function(p) {
+				p.classList.remove("active");
+			});
+			document.getElementById(panelId).classList.add("active");
+		}
+	}
+
+	var forgotBtn = document.getElementById("openForgotPassword");
+	var backBtn = document.getElementById("backToLogin");
+	var backBtnAfter = document.getElementById("backToLoginAfter");
+
+	if (forgotBtn) {
+		forgotBtn.addEventListener("click", function(e) {
+			e.preventDefault();
+			// Reset ke tampilan form
+			var body = document.getElementById("forgotBody");
+			var success = document.getElementById("forgotSuccess");
+			if (body) body.style.display = "";
+			if (success) success.style.display = "none";
+			showAuthPanel("panel-forgot");
+		});
+	}
+	if (backBtn) {
+		backBtn.addEventListener("click", function(e) {
+			e.preventDefault();
+			showAuthPanel("panel-login");
+		});
+	}
+	if (backBtnAfter) {
+		backBtnAfter.addEventListener("click", function(e) {
+			e.preventDefault();
+			showAuthPanel("panel-login");
+		});
+	}
+
+	// Helper: serialize form to URLSearchParams
+	function serializeForm(form) {
+		var params = new URLSearchParams();
+		Array.from(form.querySelectorAll("[name]")).forEach(function(el) {
+			params.set(el.name, el.value);
+		});
+		return params;
+	}
+
+	// Forgot form submit
+	var forgotForm = document.getElementById("forgotForm");
+	var forgotBtn = document.getElementById("forgotSubmit");
+	if (forgotForm) {
+		forgotForm.addEventListener("submit", function(e) {
+			e.preventDefault();
+			forgotBtn.classList.add("loading");
+			fetch("/api/forgot-password", {
+				method: "POST",
+				body: serializeForm(forgotForm),
+				headers: { "Content-Type": "application/x-www-form-urlencoded" }
+			})
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					forgotBtn.classList.remove("loading");
+					if (data.ok) {
+						document.getElementById("forgotBody").style.display = "none";
+						document.getElementById("forgotSuccess").style.display = "";
+					} else {
+						alert(data.error || "Gagal mengirim email.");
+					}
+				})
+				.catch(function() {
+					forgotBtn.classList.remove("loading");
+					alert("Gagal mengirim email. Coba lagi.");
+				});
+		});
+	}
+
+	// Reset token detection
+	var resetToken = new URLSearchParams(window.location.search).get("reset");
+	if (resetToken) {
+		window.history.replaceState({}, "", window.location.pathname);
+		document.getElementById("reset-token-input").value = resetToken;
+		openAuthModal();
+		showAuthPanel("panel-reset");
+	}
+
+	// Reset form submit
+	var resetForm = document.getElementById("resetForm");
+	if (resetForm) {
+		resetForm.addEventListener("submit", function(e) {
+			e.preventDefault();
+			fetch("/api/reset-password", {
+				method: "POST",
+				body: serializeForm(resetForm),
+				headers: { "Content-Type": "application/x-www-form-urlencoded" }
+			})
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					if (data.ok) {
+						// Reset form biar bersih
+						resetForm.reset();
+						document.getElementById("resetError").style.display = "none";
+						showAuthPanel("panel-login");
+					} else {
+						var el = document.getElementById("resetError");
+						el.textContent = data.error || "Gagal reset password.";
+						el.style.display = "";
+					}
+				});
+		});
+	}
 });

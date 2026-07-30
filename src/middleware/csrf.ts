@@ -18,6 +18,8 @@ export const csrfProtection: MiddlewareHandler = async (c, next) => {
 	if (
 		c.req.path.includes("/bookmark/") ||
 		c.req.path === "/api/translate" ||
+		c.req.path === "/api/forgot-password" ||
+		c.req.path === "/api/reset-password" ||
 		c.req.path === "/admin/terminal/exec"
 	) {
 		await next();

@@ -1470,6 +1470,125 @@ input[type="file"]::file-selector-button:hover {
 	color: #93c5fd;
 }
 
+/* Forgot & Reset panels */
+.am-forgot-body {
+	padding: 8px 0;
+}
+.am-forgot-icon {
+	text-align: center;
+	margin-bottom: 12px;
+}
+.am-forgot-title {
+	text-align: center;
+	margin: 0 0 8px;
+	font-size: 1.1rem;
+	font-weight: 700;
+}
+.am-forgot-desc {
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 0.82rem;
+	line-height: 1.5;
+	margin: 0 0 20px;
+}
+.am-forgot-back {
+	display: inline-block;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: #2563eb;
+	text-decoration: none;
+	padding: 4px 0;
+	transition: color 0.2s;
+}
+.am-forgot-back:hover {
+	color: #1d4ed8;
+	text-decoration: underline;
+}
+[data-theme="dark"] .am-forgot-back {
+	color: #60a5fa;
+}
+[data-theme="dark"] .am-forgot-back:hover {
+	color: #93c5fd;
+}
+.am-forgot-success {
+	text-align: center;
+	padding: 24px 0 12px;
+}
+
+/* Loading spinner on submit */
+.am-submit.loading {
+	pointer-events: none;
+	opacity: 0.8;
+}
+.am-submit .spinner {
+	display: none;
+	width: 18px;
+	height: 18px;
+	border: 2.5px solid rgba(255,255,255,0.3);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: amSpin 0.6s linear infinite;
+	vertical-align: middle;
+	margin-right: 6px;
+}
+.am-submit.loading .spinner {
+	display: inline-block;
+}
+.am-submit.loading .btn-text {
+	display: none;
+}
+@keyframes amSpin {
+	to { transform: rotate(360deg); }
+}
+.am-forgot {
+	text-align: center;
+	margin-top: 12px;
+}
+.am-forgot a {
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: #2563eb;
+	text-decoration: none;
+	transition: color 0.2s;
+}
+.am-forgot a:hover {
+	color: #1d4ed8;
+	text-decoration: underline;
+}
+.am-panel-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+.am-panel-header h3 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 700;
+}
+.am-back {
+	background: none;
+	border: none;
+	color: #64748b;
+	cursor: pointer;
+	font-size: 0.85rem;
+	font-weight: 600;
+	padding: 4px 8px;
+	border-radius: 6px;
+	transition: all 0.2s;
+}
+.am-back:hover {
+	color: #1e3a5f;
+	background: #f1f5f9;
+}
+[data-theme="dark"] .am-back {
+	color: #94a3b8;
+}
+[data-theme="dark"] .am-back:hover {
+	color: #e2e8f0;
+	background: #1e293b;
+}
+
 /* Auth modal responsive */
 @media (max-width: 480px) {
 	.am-card {

@@ -124,8 +124,74 @@ ${
           </div>
           <input type="hidden" name="redirect" value="/buku">
           <button type="submit" class="am-submit">Masuk</button>
+          <p class="am-forgot"><a href="#" id="openForgotPassword">Lupa Password?</a></p>
         </form>
         <p class="am-alt"><a href="/buku">Jelajahi Katalog Publik →</a></p>
+      </div>
+
+      <div class="am-panel" id="panel-forgot">
+        <div class="am-forgot-body" id="forgotBody">
+          <a href="#" class="am-forgot-back" id="backToLogin">← Kembali</a>
+          <div class="am-forgot-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="am-forgot-title">Lupa Password?</h3>
+          <p class="am-forgot-desc">Masukkan email terdaftar, kami kirim link reset password.</p>
+          <form id="forgotForm">
+            <div class="am-field">
+              <label for="forgot-email">Email</label>
+              <div class="am-input-wrap">
+                <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                <input type="email" id="forgot-email" name="email" class="am-input" required placeholder="nama@universitas.ac.id">
+              </div>
+            </div>
+            <button type="submit" class="am-submit" id="forgotSubmit">
+              <span class="spinner"></span>
+              <span class="btn-text">Kirim Link Reset</span>
+            </button>
+          </form>
+        </div>
+        <div class="am-forgot-success" id="forgotSuccess" style="display:none">
+          <div class="am-forgot-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h3 class="am-forgot-title" style="color:var(--success)">Email Terkirim!</h3>
+          <p class="am-forgot-desc">Cek inbox atau spam, kami udah kirim link reset password.</p>
+          <a href="#" class="am-forgot-back" id="backToLoginAfter" style="display:inline-block;margin-top:16px">← Kembali ke Masuk</a>
+        </div>
+      </div>
+
+      <div class="am-panel" id="panel-reset">
+        <div class="am-panel-header">
+          <h3>Buat Password Baru</h3>
+        </div>
+        <form id="resetForm">
+          <input type="hidden" name="token" id="reset-token-input">
+          <div class="am-field">
+            <label for="reset-password">Password Baru</label>
+            <div class="am-input-wrap">
+              <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+              <input type="password" id="reset-password" name="password" class="am-input" required minlength="6" placeholder="Minimal 6 karakter">
+              <button type="button" class="am-pw-toggle" data-target="reset-password" aria-label="Tampilkan Password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="am-field">
+            <label for="reset-password_confirm">Konfirmasi Password</label>
+            <div class="am-input-wrap">
+              <span class="am-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg></span>
+              <input type="password" id="reset-password_confirm" name="password_confirm" class="am-input" required placeholder="Ulangi password">
+              <button type="button" class="am-pw-toggle" data-target="reset-password_confirm" aria-label="Tampilkan Password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="am-submit">Ganti Password</button>
+        </form>
+        <div id="resetError" style="display:none;text-align:center;padding:12px 0;color:var(--danger);font-size:0.85rem"></div>
       </div>
 
       <div class="am-panel" id="panel-register">
