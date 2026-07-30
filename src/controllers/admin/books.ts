@@ -1,4 +1,4 @@
-// src/controllers/admin/books.ts — Book CRUD
+// src/controllers/admin/books.ts — Book CRUD (Many-to-Many with Programs)
 
 import type { Context } from "hono";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
@@ -54,9 +54,10 @@ export async function list(c: Context) {
 	const books = await query<any[]>(
 		`SELECT b.id, b.title, b.slug, b.author, b.access_type, b.cover_image,
           b.page_count, b.views, b.created_at,
-          pr.name AS program_name
-   FROM books b
-   LEFT JOIN programs pr ON pr.id = b.program_id${whereSql}
+          (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+           FROM book_program bp JOIN programs p ON p.id = bp.program_id
+           WHERE bp.book_id = b.id) AS program_names
+   FROM books b${whereSql}
    ORDER BY b.created_at ${orderSql}
    LIMIT ${limit} OFFSET ${offset}`,
 		dataParams,
@@ -79,12 +80,15 @@ export async function createForm(c: Context) {
 	if (!user) return c.redirect("/login");
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
 		return c.redirect("/buku");
-	const progs = await query<
-		{ id: number; name: string; faculty_name: string }[]
-	>(
-		`SELECT p.id, p.name, f.name AS faculty_name FROM programs p JOIN faculties f ON f.id = p.faculty_id ORDER BY f.name, p.name`,
+	const facs = await query<{ id: number; name: string }[]>(
+		"SELECT id, name FROM faculties ORDER BY name",
 	);
-	return c.html(bookForm({ name: user.name, roleName: user.roleName }, progs));
+	const progs = await query<{ id: number; name: string; faculty_id: number }[]>(
+		"SELECT id, name, faculty_id FROM programs ORDER BY faculty_id, name",
+	);
+	return c.html(
+		bookForm({ name: user.name, roleName: user.roleName }, facs, progs),
+	);
 }
 
 // ── Store ──
@@ -93,7 +97,7 @@ export async function store(c: Context) {
 	if (!user) return c.redirect("/login");
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
 		return c.redirect("/buku");
-	const body = await c.req.parseBody();
+	const body = await c.req.parseBody({ all: true });
 
 	const title = String(body.title || "").trim();
 	const author = String(body.author || "").trim();
@@ -103,7 +107,14 @@ export async function store(c: Context) {
 	}
 
 	const slug = makeSlug(title);
-	const programId = Number(body.program_id) || null;
+
+	// Parse program_ids from checkbox array
+	const rawProdi = body.program_ids;
+	let programIds: number[] = [];
+	if (rawProdi) {
+		const arr = Array.isArray(rawProdi) ? rawProdi : [rawProdi];
+		programIds = arr.map(Number).filter((id) => id > 0);
+	}
 
 	// Handle cover upload (file upload OR downloaded from OpenLibrary)
 	let coverPath: string | null = null;
@@ -121,7 +132,6 @@ export async function store(c: Context) {
 		await writeFile(join(APP.COVER_PATH, filename), buf);
 		coverPath = filename;
 	}
-	// Fallback: cover sudah didownload oleh OpenLibrary auto-fill
 	if (!coverPath) {
 		const dl = body.downloaded_cover;
 		if (dl && typeof dl === "string" && dl.startsWith("ol-")) {
@@ -150,13 +160,12 @@ export async function store(c: Context) {
 		return c.redirect("/admin/books/create");
 	}
 
-	await query(
-		`INSERT INTO books (program_id, uploaded_by, title, slug, author,
+	const result = await query<any>(
+		`INSERT INTO books (uploaded_by, title, slug, author,
       publisher, publication_year, isbn, description, access_type,
       file_path, cover_image, page_count, file_size)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
-			programId,
 			user.userId,
 			title,
 			slug,
@@ -172,6 +181,17 @@ export async function store(c: Context) {
 			0,
 		],
 	);
+
+	// biome-ignore lint/suspicious/noExplicitAny: mysql2 result shape
+	const bookId = (result as any)?.insertId ?? 0;
+
+	// Sync pivot table
+	if (bookId > 0 && programIds.length > 0) {
+		const values = programIds.map((pid) => `(${bookId},${pid})`).join(",");
+		await query(
+			`INSERT INTO book_program (book_id, program_id) VALUES ${values}`,
+		);
+	}
 
 	await query(
 		`INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)`,
@@ -201,13 +221,21 @@ export async function editForm(c: Context) {
 			404,
 		);
 	}
-	const progs = await query<
-		{ id: number; name: string; faculty_name: string }[]
-	>(
-		`SELECT p.id, p.name, f.name AS faculty_name FROM programs p JOIN faculties f ON f.id = p.faculty_id ORDER BY f.name, p.name`,
+	// Get current program IDs for this book
+	const currentProdi = await query<{ program_id: number }[]>(
+		"SELECT program_id FROM book_program WHERE book_id = ?",
+		[id],
+	);
+	book.program_ids = currentProdi.map((r) => r.program_id);
+
+	const facs = await query<{ id: number; name: string }[]>(
+		"SELECT id, name FROM faculties ORDER BY name",
+	);
+	const progs = await query<{ id: number; name: string; faculty_id: number }[]>(
+		"SELECT id, name, faculty_id FROM programs ORDER BY faculty_id, name",
 	);
 	return c.html(
-		bookForm({ name: user.name, roleName: user.roleName }, progs, book),
+		bookForm({ name: user.name, roleName: user.roleName }, facs, progs, book),
 	);
 }
 
@@ -218,7 +246,7 @@ export async function update(c: Context) {
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
 		return c.redirect("/buku");
 	const id = Number(c.req.param("id"));
-	const body = await c.req.parseBody();
+	const body = await c.req.parseBody({ all: true });
 
 	const existing = await queryOne<any>("SELECT * FROM books WHERE id = ?", [
 		id,
@@ -235,7 +263,15 @@ export async function update(c: Context) {
 		return c.redirect(`/admin/books/${id}/edit`);
 	}
 
-	// Handle cover upload (file upload OR downloaded from OpenLibrary)
+	// Parse program_ids from checkbox array
+	const rawProdi = body.program_ids;
+	let programIds: number[] = [];
+	if (rawProdi) {
+		const arr = Array.isArray(rawProdi) ? rawProdi : [rawProdi];
+		programIds = arr.map(Number).filter((id) => id > 0);
+	}
+
+	// Handle cover upload
 	let coverPath = existing.cover_image;
 	const cover = body.cover;
 	if (
@@ -254,13 +290,11 @@ export async function update(c: Context) {
 		await writeFile(join(APP.COVER_PATH, filename), buf);
 		coverPath = filename;
 	}
-	// Fallback: cover dari OpenLibrary auto-fill
 	if (!coverPath || coverPath === existing.cover_image) {
 		const dl = body.downloaded_cover;
 		if (dl && typeof dl === "string" && dl.startsWith("ol-")) {
 			const { existsSync } = await import("node:fs");
 			if (existsSync(join(APP.COVER_PATH, dl))) {
-				// Hapus cover lama kalo beda
 				if (existing.cover_image && existing.cover_image !== dl) {
 					await unlink(join(APP.COVER_PATH, existing.cover_image)).catch(
 						() => {},
@@ -273,7 +307,7 @@ export async function update(c: Context) {
 
 	await query(
 		`UPDATE books SET title=?, author=?, publisher=?, publication_year=?, isbn=?,
-      description=?, access_type=?, program_id=?, cover_image=?
+      description=?, access_type=?, cover_image=?
    WHERE id=?`,
 		[
 			title,
@@ -283,11 +317,19 @@ export async function update(c: Context) {
 			body.isbn || null,
 			body.description || null,
 			body.access_type || "public",
-			Number(body.program_id) || null,
 			coverPath,
 			id,
 		],
 	);
+
+	// Sync pivot table: delete old, insert new
+	await query("DELETE FROM book_program WHERE book_id = ?", [id]);
+	if (programIds.length > 0) {
+		const values = programIds.map((pid) => `(${id},${pid})`).join(",");
+		await query(
+			`INSERT INTO book_program (book_id, program_id) VALUES ${values}`,
+		);
+	}
 
 	await query(
 		`INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?,?,?,?)`,
@@ -315,6 +357,9 @@ export async function remove(c: Context) {
 		setFlash(c, "Buku tidak ditemukan.", "danger");
 		return c.redirect("/admin/books");
 	}
+
+	// Cascade DELETE on book_program is handled by FK, but delete explicitly too
+	await query("DELETE FROM book_program WHERE book_id = ?", [id]);
 
 	if (book.file_path) {
 		await unlink(join(APP.PDF_PATH, book.file_path)).catch(() => {});
@@ -355,7 +400,7 @@ export async function bulkTemplate(c: Context) {
 			Penerbit: "Erlangga",
 			Tahun: 2024,
 			ISBN: "978-602-xxx-xxx-1",
-			"Program Studi": "Teknik Informatika",
+			"Program Studi": "Teknologi Informasi, Sistem Informasi",
 			Akses: "public",
 			"File PDF": "matematika.pdf",
 			Cover: "matematika.jpg",
@@ -367,7 +412,7 @@ export async function bulkTemplate(c: Context) {
 			Penerbit: "",
 			Tahun: 2023,
 			ISBN: "",
-			"Program Studi": "",
+			"Program Studi": "Keperawatan",
 			Akses: "internal",
 			"File PDF": "tesis-siti.pdf",
 			Cover: "",
@@ -376,18 +421,17 @@ export async function bulkTemplate(c: Context) {
 
 	const ws = XLSX.utils.json_to_sheet(data);
 
-	// Set column widths
 	ws["!cols"] = [
-		{ wch: 30 }, // Judul
-		{ wch: 25 }, // Penulis
-		{ wch: 40 }, // Sinopsis
-		{ wch: 20 }, // Penerbit
-		{ wch: 8 }, // Tahun
-		{ wch: 20 }, // ISBN
-		{ wch: 25 }, // Program Studi
-		{ wch: 10 }, // Akses
-		{ wch: 25 }, // File PDF
-		{ wch: 20 }, // Cover
+		{ wch: 30 },
+		{ wch: 25 },
+		{ wch: 40 },
+		{ wch: 20 },
+		{ wch: 8 },
+		{ wch: 20 },
+		{ wch: 35 }, // Program Studi (bisa multi, pisahkan koma)
+		{ wch: 10 },
+		{ wch: 25 },
+		{ wch: 20 },
 	];
 
 	XLSX.utils.book_append_sheet(wb, ws, "Buku");
@@ -409,13 +453,14 @@ export async function bulkForm(c: Context) {
 	if (!["admin", "super_admin", "pustakawan"].includes(user.roleName))
 		return c.redirect("/buku");
 
-	const progs = await query<
-		{ id: number; name: string; faculty_name: string }[]
-	>(
-		`SELECT p.id, p.name, f.name AS faculty_name FROM programs p JOIN faculties f ON f.id = p.faculty_id ORDER BY f.name, p.name`,
+	const facs = await query<{ id: number; name: string }[]>(
+		"SELECT id, name FROM faculties ORDER BY name",
+	);
+	const progs = await query<{ id: number; name: string; faculty_id: number }[]>(
+		"SELECT id, name, faculty_id FROM programs ORDER BY faculty_id, name",
 	);
 	return c.html(
-		bulkUploadForm({ name: user.name, roleName: user.roleName }, progs),
+		bulkUploadForm({ name: user.name, roleName: user.roleName }, facs, progs),
 	);
 }
 
@@ -427,7 +472,6 @@ export async function bulkStore(c: Context) {
 		return c.redirect("/buku");
 
 	const formData = await c.req.formData();
-	const programId = Number(formData.get("program_id")) || null;
 
 	// Parse Excel file
 	const excelFile = formData.get("excel_file");
@@ -459,20 +503,20 @@ export async function bulkStore(c: Context) {
 
 	// Index cover files by name
 	const coverFilesRaw = formData.getAll("cover_files");
-	console.log("Cover files count:", coverFilesRaw.length);
 	const coverMap = new Map<string, File>();
 	for (const f of coverFilesRaw) {
-		if (f instanceof File) {
-			console.log("Cover:", f.name);
-			coverMap.set(f.name, f);
-		}
+		if (f instanceof File) coverMap.set(f.name, f);
 	}
 
-	// Fetch all programs for name lookup
+	// Fetch all programs for name lookup (case-insensitive)
 	const allProgs = await query<{ id: number; name: string }[]>(
 		`SELECT id, name FROM programs`,
 	);
-	const progMap = new Map(allProgs.map((p) => [p.name.toLowerCase(), p.id]));
+	// Build lookup map: lowercase trimmed name -> id
+	const progMap = new Map<string, number>();
+	for (const p of allProgs) {
+		progMap.set(p.name.toLowerCase().trim(), p.id);
+	}
 
 	await mkdir(APP.PDF_PATH, { recursive: true });
 	await mkdir(APP.COVER_PATH, { recursive: true });
@@ -493,7 +537,7 @@ export async function bulkStore(c: Context) {
 				: null;
 		const isbn = String(row["ISBN"] || row["isbn"] || "").trim() || null;
 		const access = String(row["Akses"] || row["akses"] || "public").trim();
-		const prodiName = String(
+		const prodiRaw = String(
 			row["Program Studi"] || row["program studi"] || "",
 		).trim();
 		const pdfName = String(
@@ -506,8 +550,6 @@ export async function bulkStore(c: Context) {
 			continue;
 		}
 
-		pdfName.replace(/\.pdf$/i, "");
-
 		const pdfFile = pdfMap.get(pdfName) || pdfMap.get(pdfName + ".pdf");
 		if (
 			!pdfFile ||
@@ -516,6 +558,18 @@ export async function bulkStore(c: Context) {
 		) {
 			failCount++;
 			continue;
+		}
+
+		// Parse comma-separated program names
+		// ponytail: ignores typos silently to keep uploads moving
+		const prodiIds: number[] = [];
+		if (prodiRaw) {
+			const names = prodiRaw.split(",").map((s) => s.trim().toLowerCase());
+			for (const n of names) {
+				if (!n) continue;
+				const pid = progMap.get(n);
+				if (pid) prodiIds.push(pid);
+			}
 		}
 
 		try {
@@ -545,18 +599,12 @@ export async function bulkStore(c: Context) {
 
 			const pageCount = Math.max(1, Math.round(pdfBuf.length / 100_000));
 
-			// Resolve program_id from Excel or fallback to default
-			const rowProgramId = prodiName
-				? progMap.get(prodiName.toLowerCase()) || programId
-				: programId;
-
-			await query(
-				`INSERT INTO books (program_id, uploaded_by, title, slug, author,
-      publisher, publication_year, isbn, description, access_type,
-      file_path, cover_image, page_count, file_size)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			const result = await query<any>(
+				`INSERT INTO books (uploaded_by, title, slug, author,
+        publisher, publication_year, isbn, description, access_type,
+        file_path, cover_image, page_count, file_size)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 				[
-					rowProgramId,
 					user.userId,
 					title,
 					slug,
@@ -572,6 +620,18 @@ export async function bulkStore(c: Context) {
 					pdfBuf.length,
 				],
 			);
+
+			// biome-ignore lint/suspicious/noExplicitAny: mysql2 result shape
+			const bookId = (result as any)?.insertId ?? 0;
+
+			// Sync pivot table
+			if (bookId > 0 && prodiIds.length > 0) {
+				const values = prodiIds.map((pid) => `(${bookId},${pid})`).join(",");
+				await query(
+					`INSERT INTO book_program (book_id, program_id) VALUES ${values}`,
+				);
+			}
+
 			successCount++;
 		} catch (e) {
 			console.error("Insert error:", e);
@@ -606,4 +666,15 @@ function makeSlug(text: string): string {
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-|-$/g, "")
 		.slice(0, 200);
+}
+
+// ── API: Get programs by faculty (for AJAX on form) ──
+export async function programsByFaculty(c: Context) {
+	const facId = Number(c.req.param("facultyId"));
+	if (!facId) return c.json([]);
+	const progs = await query<{ id: number; name: string }[]>(
+		"SELECT id, name FROM programs WHERE faculty_id = ? ORDER BY name",
+		[facId],
+	);
+	return c.json(progs);
 }

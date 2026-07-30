@@ -1,7 +1,7 @@
-// src/views/admin/books.ts — Book CRUD views
+// src/views/admin/books.ts — Book CRUD views (Many-to-Many with Programs)
 
 import { esc } from "../../helpers";
-import { adminLayout, inputField, selectField, textareaField } from "./helpers";
+import { adminLayout, inputField, textareaField } from "./helpers";
 
 type BookRow = {
 	id: number;
@@ -9,13 +9,14 @@ type BookRow = {
 	slug: string;
 	author: string;
 	access_type: string;
-	program_name: string | null;
+	program_names: string | null;
 	cover_image: string | null;
 	page_count: number;
 	views: number;
 	created_at: string;
 };
-type Prog = { id: number; name: string; faculty_name: string };
+type Faculty = { id: number; name: string };
+type Program = { id: number; name: string; faculty_id: number };
 
 export function bookList(
 	books: BookRow[],
@@ -40,11 +41,20 @@ export function bookList(
 			const cover = b.cover_image
 				? `<div style="width:48px;height:64px;border-radius:6px;overflow:hidden;background:var(--bg-warm);flex-shrink:0"><img src="/uploads/covers/${esc(b.cover_image)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`
 				: `<div style="width:48px;height:64px;border-radius:6px;background:var(--bg-warm);display:flex;align-items:center;justify-content:center;color:var(--text-dim);flex-shrink:0">📖</div>`;
+			const prodiBadges = b.program_names
+				? b.program_names
+						.split(", ")
+						.map(
+							(n) =>
+								`<span style="display:inline-block;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:4px;font-size:0.7rem;margin:1px 2px">${esc(n)}</span>`,
+						)
+						.join("")
+				: '<span class="text-muted" style="font-size:0.75rem">—</span>';
 			rows += `<tr>
         <td>${cover}</td>
         <td><strong>${esc(b.title)}</strong><br><small class="text-muted">${esc(b.author)}</small></td>
+        <td>${prodiBadges}</td>
         <td><span class="badge-sm ${b.access_type}">${b.access_type === "internal" ? "Internal" : "Publik"}</span></td>
-        <td>${b.views}</td>
         <td><small>${new Date(b.created_at).toLocaleDateString("id-ID")}</small></td>
         <td class="nowrap">
           <a href="/admin/books/${b.id}/edit" class="btn-sm">Edit</a>
@@ -72,7 +82,6 @@ export function bookList(
 		const p = pagination;
 		const pageLink = (n: number) => `/admin/books?page=${n}${searchQs}`;
 
-		// Build page numbers with ellipsis
 		const pages: (number | "...")[] = [];
 		const maxVisible = 5;
 		if (p.totalPages <= maxVisible + 2) {
@@ -164,7 +173,7 @@ export function bookList(
 </div>
 <div class="admin-card">
   <table class="table">
-    <thead><tr><th style="width:50px"></th><th>Judul</th><th>Akses</th><th>Dilihat</th><th>Tanggal</th><th>Aksi</th></tr></thead>
+    <thead><tr><th style="width:50px"></th><th>Judul</th><th>Program Studi</th><th>Akses</th><th>Tanggal</th><th>Aksi</th></tr></thead>
     <tbody id="bookTableBody">${rows}</tbody>
   </table>
   ${paginationHtml}
@@ -177,7 +186,6 @@ export function bookList(
       timer,tbody=document.getElementById('bookTableBody'),
       card=document.querySelector('.admin-card');
 
-  // Toggle dropdown
   document.querySelectorAll('.dd').forEach(function(dd){
     dd.querySelector('.dd-btn').addEventListener('click',function(e){
       e.stopPropagation();
@@ -235,7 +243,8 @@ export function bookList(
 
 export function bookForm(
 	user: { name: string; roleName: string },
-	progs: Prog[],
+	facs: Faculty[],
+	progs: Program[],
 	book?: {
 		id?: number;
 		title?: string;
@@ -247,9 +256,9 @@ export function bookForm(
 		description?: string;
 		access_type?: string;
 		category_id?: number;
-		program_id?: number | null;
-		cover_image?: string | string | null;
+		cover_image?: string | null;
 		page_count?: number;
+		program_ids?: number[];
 	} | null,
 ): string {
 	const isEdit = !!book?.id;
@@ -258,17 +267,55 @@ export function bookForm(
 		: "/admin/books/create";
 	const title = isEdit ? "Edit Buku" : "Tambah Buku";
 
-	const progOpts = progs.map((p) => ({
-		value: p.id,
-		label: `${p.faculty_name} — ${p.name}`,
-	}));
+	const selectedProdi = new Set(book?.program_ids ?? []);
 
 	const coverPreview =
 		isEdit && book?.cover_image
 			? `<div style="margin-bottom:12px"><img id="coverPreview" src="/uploads/covers/${esc(String(book.cover_image))}" style="max-height:120px;border-radius:8px;border:1px solid var(--border)"></div>`
 			: "";
 
+	// Build per-faculty checkbox groups
+	const progsByFaculty = new Map<number, Program[]>();
+	for (const p of progs) {
+		if (!progsByFaculty.has(p.faculty_id)) progsByFaculty.set(p.faculty_id, []);
+		progsByFaculty.get(p.faculty_id)!.push(p);
+	}
+
+	let checkboxGroupsHtml = "";
+	for (const f of facs) {
+		const facProgs = progsByFaculty.get(f.id) ?? [];
+		if (facProgs.length === 0) continue;
+		let checks = "";
+		for (const p of facProgs) {
+			const checked = selectedProdi.has(p.id) ? " checked" : "";
+			checks += `<label class="prodi-check-item">
+        <input type="checkbox" name="program_ids" value="${p.id}"${checked}>
+        <span>${esc(p.name)}</span>
+      </label>`;
+		}
+		checkboxGroupsHtml += `
+    <div class="prodi-group" data-faculty="${f.id}" style="display:none;margin-bottom:16px">
+      <strong style="display:block;font-size:0.85rem;color:var(--text-muted);margin-bottom:6px">${esc(f.name)}</strong>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${checks}</div>
+    </div>`;
+	}
+
 	const body = `
+<style>
+  .prodi-check-item {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 12px;border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:all .15s;font-size:0.85rem;user-select:none;
+    background:var(--bg-card);color:var(--text);
+  }
+  .prodi-check-item:hover{border-color:var(--primary);background:var(--primary-light)}
+  .prodi-check-item input[type=checkbox]{accent-color:var(--primary);margin:0}
+  .prodi-check-item:has(input:checked){
+    border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:600
+  }
+  #facultySelect { max-width:400px }
+  .prodi-section { margin-top:12px;padding:16px;border:1px solid var(--border-light);border-radius:10px;background:var(--bg-elevated) }
+</style>
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">${isEdit ? "Edit Buku" : "Tambah Buku"}</h2>
   <a href="/admin/books" class="btn btn-outline btn-sm">← Kembali</a>
@@ -281,7 +328,22 @@ export function bookForm(
       ${textareaField("Sinopsis", "description", book?.description ?? "", { rows: 3 })}
     </div>
 
-    ${selectField("Program Studi", "program_id", progOpts, book?.program_id ?? "")}
+    <!-- Faculty dropdown + Program checkboxes -->
+    <div class="form-group">
+      <label for="facultySelect">Fakultas</label>
+      <select id="facultySelect" class="form-control" style="max-width:400px">
+        <option value="">— Pilih Fakultas untuk melihat Program Studi —</option>
+        ${facs.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join("")}
+      </select>
+    </div>
+
+    <div class="prodi-section" id="prodiSection">
+      <small class="text-muted" style="display:block;margin-bottom:8px">Pilih Program Studi (centang lebih dari satu jika perlu):</small>
+      <div id="prodiCheckboxContainer">
+        ${checkboxGroupsHtml}
+        <div id="noProdiMsg" class="text-muted" style="font-size:0.85rem;text-align:center;padding:16px">Pilih fakultas terlebih dahulu</div>
+      </div>
+    </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       ${inputField("Penerbit", "publisher", book?.publisher ?? "")}
@@ -299,16 +361,25 @@ export function bookForm(
         </div>
         <div id="olStatus" style="font-size:0.78rem;margin-top:6px;color:var(--text-dim)"></div>
       </div>
-      ${selectField(
-				"Akses",
-				"access_type",
-				[
+      ${(() => {
+				const accessOpts = [
 					{ value: "public", label: "Publik" },
 					{ value: "internal", label: "Internal" },
-				],
-				book?.access_type ?? "public",
-				{ required: true },
-			)}
+				];
+				let optsHtml = `<option value="">— Pilih —</option>`;
+				for (const o of accessOpts) {
+					const sel =
+						String(o.value) === String(book?.access_type ?? "public")
+							? " selected"
+							: "";
+					optsHtml += `<option value="${o.value}"${sel}>${esc(o.label)}</option>`;
+				}
+				return `
+    <div class="form-group">
+      <label for="access_type">Akses</label>
+      <select id="access_type" name="access_type" class="form-control" required>${optsHtml}</select>
+    </div>`;
+			})()}
     </div>
 
     <div class="form-group">
@@ -328,6 +399,53 @@ export function bookForm(
 </div>
 
 <script>
+// Faculty → Program checkboxes interaction
+(function() {
+  var facSelect = document.getElementById('facultySelect');
+  var groups = document.querySelectorAll('.prodi-group');
+  var noMsg = document.getElementById('noProdiMsg');
+
+  function filterProdi(facId) {
+    var hasVisible = false;
+    groups.forEach(function(g) {
+      if (!facId || g.getAttribute('data-faculty') === facId) {
+        g.style.display = 'block';
+        hasVisible = true;
+      } else {
+        g.style.display = 'none';
+      }
+    });
+    if (noMsg) noMsg.style.display = hasVisible ? 'none' : 'block';
+  }
+
+  facSelect.addEventListener('change', function() {
+    filterProdi(this.value);
+  });
+
+  // On edit: auto-select first faculty with checked programs, or show all
+  var hasChecked = false;
+  groups.forEach(function(g) {
+    var checks = g.querySelectorAll('input[type=checkbox]:checked');
+    if (checks.length > 0) {
+      hasChecked = true;
+    }
+  });
+  if (hasChecked) {
+    // Show all groups that have checked items
+    groups.forEach(function(g) {
+      var checks = g.querySelectorAll('input[type=checkbox]:checked');
+      if (checks.length > 0) {
+        g.style.display = 'block';
+      }
+    });
+    if (noMsg) noMsg.style.display = 'none';
+  } else {
+    // Show first faculty
+    if (facSelect.value) filterProdi(facSelect.value);
+  }
+})();
+
+// OpenLibrary autofill
 document.getElementById('olAutofill')?.addEventListener('click', async function() {
 	const isbn = document.getElementById('isbn')?.value?.replace(/[^0-9X]/gi, '');
 	if (!isbn || isbn.length < 10) {
@@ -372,7 +490,6 @@ document.getElementById('olAutofill')?.addEventListener('click', async function(
 		status.style.color = 'var(--danger)';
 	}
 });
-
 </script>`;
 
 	return adminLayout(title, body, user);
@@ -381,14 +498,25 @@ document.getElementById('olAutofill')?.addEventListener('click', async function(
 // ── Bulk Upload Form ──
 export function bulkUploadForm(
 	user: { name: string; roleName: string },
-	progs: Prog[],
+	facs: Faculty[],
+	progs: Program[],
 ): string {
-	const progOpts = progs.map((p) => ({
-		value: p.id,
-		label: `${p.faculty_name} — ${p.name}`,
-	}));
-
 	const body = `
+<style>
+  .prodi-check-item {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 12px;border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:all .15s;font-size:0.85rem;user-select:none;
+    background:var(--bg-card);color:var(--text);
+  }
+  .prodi-check-item:hover{border-color:var(--primary);background:var(--primary-light)}
+  .prodi-check-item input[type=checkbox]{accent-color:var(--primary);margin:0}
+  .prodi-check-item:has(input:checked){
+    border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:600
+  }
+  #bulkFacultySelect { max-width:400px }
+  .prodi-section { margin-top:12px;padding:16px;border:1px solid var(--border-light);border-radius:10px;background:var(--bg-elevated) }
+</style>
 <div class="admin-toolbar">
   <h2 style="font-family:var(--font-heading);font-size:1.2rem">Upload Bulk dari Excel</h2>
   <div style="display:flex;gap:8px">
@@ -398,7 +526,7 @@ export function bulkUploadForm(
 </div>
 <div class="admin-card" style="padding:24px;max-width:960px">
   <div style="background:var(--primary-light);border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:0.85rem;color:var(--primary);line-height:1.6">
-    <strong>📌 Format Excel (.xlsx):</strong>
+    <strong>📌 Format Excel (.xlsx) — Program Studi bisa diisi lebih dari 1, pisahkan dengan koma:</strong>
     <table style="width:100%;margin-top:8px;font-size:0.8rem;border-collapse:collapse">
       <thead><tr style="border-bottom:1px solid var(--primary);opacity:0.7">
         <th style="padding:4px 8px;text-align:left">Judul</th>
@@ -419,7 +547,7 @@ export function bulkUploadForm(
         <td style="padding:4px 8px">Penerbit</td>
         <td style="padding:4px 8px">2024</td>
         <td style="padding:4px 8px">978-602-xxx</td>
-        <td style="padding:4px 8px">Teknik Informatika</td>
+        <td style="padding:4px 8px">Teknologi Informasi, Sistem Informasi</td>
         <td style="padding:4px 8px">public/internal</td>
         <td style="padding:4px 8px">nama-file.pdf</td>
         <td style="padding:4px 8px">cover.jpg</td>
@@ -428,6 +556,7 @@ export function bulkUploadForm(
     <div style="margin-top:8px">
       <strong>File PDF:</strong> Nama file harus sesuai dengan isi kolom "File PDF"<br>
       <strong>Cover:</strong> Nama file cover harus sesuai dengan isi kolom "Cover" (opsional)<br>
+      <strong>Program Studi:</strong> Gunakan nama prodi yang terdaftar di database, pisahkan dengan koma untuk multi-prodi. Nama yang typo akan diabaikan.<br>
       <strong>Akses:</strong> public atau internal
     </div>
   </div>

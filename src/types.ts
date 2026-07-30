@@ -12,12 +12,16 @@ export interface User {
 	last_login: string | null;
 }
 
-export type RoleName = "super_admin" | "admin" | "pustakawan" | "mahasiswa" | "tamu";
+export type RoleName =
+	| "super_admin"
+	| "admin"
+	| "pustakawan"
+	| "mahasiswa"
+	| "tamu";
 
 export interface Book {
 	id: number;
 	category_id: number;
-	program_id: number | null;
 	uploaded_by: number;
 	title: string;
 	slug: string;
@@ -35,8 +39,11 @@ export interface Book {
 	status: "active" | "inactive";
 	uploader_name?: string;
 	category_name?: string;
-	program_name?: string;
-	faculty_name?: string;
+	program_name?: string; // comma-separated (from GROUP_CONCAT via pivot)
+	program_names?: string;
+	faculty_name?: string; // comma-separated (from GROUP_CONCAT via pivot)
+	faculty_names?: string;
+	programs?: { id: number; name: string; faculty_name?: string }[];
 	created_at: string;
 }
 

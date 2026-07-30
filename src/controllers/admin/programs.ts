@@ -163,7 +163,7 @@ export async function remove(c: Context) {
 	}
 
 	const [bookCount] = await query<any[]>(
-		"SELECT COUNT(*) AS c FROM books WHERE program_id = ?",
+		"SELECT COUNT(*) AS c FROM book_program WHERE program_id = ?",
 		[id],
 	);
 	if (bookCount.c > 0) {

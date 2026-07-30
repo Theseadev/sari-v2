@@ -925,10 +925,10 @@ export async function catalog(c: Context) {
     }
     
     if (programId > 0) {
-        where += " AND b.program_id = ?";
+        where += " AND b.id IN (SELECT book_id FROM book_program WHERE program_id = ?)";
         params.push(programId);
     } else if (facultyId > 0) {
-        where += " AND pr.faculty_id = ?";
+        where += " AND b.id IN (SELECT bp.book_id FROM book_program bp JOIN programs pr ON pr.id = bp.program_id WHERE pr.faculty_id = ?)";
         params.push(facultyId);
     }
 
@@ -936,8 +936,6 @@ export async function catalog(c: Context) {
     const totalQuery = `
         SELECT COUNT(*) AS cnt 
         FROM books b 
-        LEFT JOIN programs pr ON pr.id = b.program_id 
-        LEFT JOIN faculties f ON f.id = pr.faculty_id 
         WHERE ${where}
     `;
     const total = await queryOne<{ cnt: number }>(totalQuery, params);
@@ -947,10 +945,14 @@ export async function catalog(c: Context) {
     const dataQuery = `
         SELECT b.id, b.title, b.slug, b.author, b.access_type,
                b.cover_image, b.page_count, b.views,
-               pr.name AS program_name, f.name AS faculty_name
+               (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+                FROM book_program bp JOIN programs p ON p.id = bp.program_id
+                WHERE bp.book_id = b.id) AS program_name,
+               (SELECT GROUP_CONCAT(DISTINCT f.name SEPARATOR ', ')
+                FROM book_program bp2 JOIN programs pr2 ON pr2.id = bp2.program_id
+                JOIN faculties f ON f.id = pr2.faculty_id
+                WHERE bp2.book_id = b.id) AS faculty_name
         FROM books b
-        LEFT JOIN programs pr ON pr.id = b.program_id
-        LEFT JOIN faculties f ON f.id = pr.faculty_id
         WHERE ${where} 
         ORDER BY b.created_at DESC 
         LIMIT ${ITEMS_PER_PAGE} OFFSET ${(page - 1) * ITEMS_PER_PAGE}
@@ -970,9 +972,10 @@ export async function catalog(c: Context) {
     // Kueri Buku Terpopuler untuk Ambalan Kayu 3D (Shelf)
     const popularBooks = await query<Book[]>(`
         SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.views, b.page_count,
-               pr.name AS program_name
+               (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+                FROM book_program bp JOIN programs p ON p.id = bp.program_id
+                WHERE bp.book_id = b.id) AS program_name
         FROM books b
-        LEFT JOIN programs pr ON pr.id = b.program_id
         WHERE b.status = 'active'
         ORDER BY b.views DESC
         LIMIT 9
@@ -1315,10 +1318,15 @@ export async function detail(c: Context) {
 
     // Ambil Buku Saat Ini
     const currentQuery = `
-        SELECT b.*, pr.name AS program_name, f.name AS faculty_name
+        SELECT b.*,
+               (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+                FROM book_program bp JOIN programs p ON p.id = bp.program_id
+                WHERE bp.book_id = b.id) AS program_name,
+               (SELECT GROUP_CONCAT(DISTINCT f.name SEPARATOR ', ')
+                FROM book_program bp2 JOIN programs pr2 ON pr2.id = bp2.program_id
+                JOIN faculties f ON f.id = pr2.faculty_id
+                WHERE bp2.book_id = b.id) AS faculty_name
         FROM books b
-        LEFT JOIN programs pr ON pr.id = b.program_id
-        LEFT JOIN faculties f ON f.id = pr.faculty_id
         WHERE ${baseWhere} AND b.slug = ?
         LIMIT 1
     `;
@@ -1349,10 +1357,10 @@ export async function detail(c: Context) {
             navParams.push(search.replace(/[\-+*~"()<>]/g, " ").trim() + "*");
         }
         if (programId > 0) {
-            navWhere += " AND program_id = ?";
+            navWhere += " AND id IN (SELECT book_id FROM book_program WHERE program_id = ?)";
             navParams.push(programId);
         } else if (facultyId > 0) {
-            navWhere += " AND program_id IN (SELECT id FROM programs WHERE faculty_id = ?)";
+            navWhere += " AND id IN (SELECT bp.book_id FROM book_program bp JOIN programs pr ON pr.id = bp.program_id WHERE pr.faculty_id = ?)";
             navParams.push(facultyId);
         }
 
@@ -1410,7 +1418,8 @@ export async function detail(c: Context) {
                 <p class="author">oleh <strong>${esc(current.author)}</strong></p>
                 
                 <div class="meta-grid-detail">
-                    ${current.faculty_name ? `<span><strong>Fakultas / Prodi</strong>${esc(current.faculty_name)}<br>${current.program_name ? esc(current.program_name) : ''}</span>` : ''}
+                    ${current.faculty_name ? `<span><strong>Fakultas</strong>${esc(current.faculty_name)}</span>` : ''}
+                    ${current.program_name ? `<span><strong>Program Studi</strong>${esc(current.program_name)}</span>` : ''}
                     ${current.publisher ? `<span><strong>Penerbit</strong>${esc(current.publisher)}</span>` : ''}
                     ${current.publication_year ? `<span><strong>Tahun</strong>${current.publication_year}</span>` : ''}
                     ${current.isbn ? `<span><strong>ISBN</strong>${esc(current.isbn)}</span>` : ''}

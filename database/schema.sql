@@ -130,7 +130,6 @@ INSERT INTO programs (id, faculty_id, name, slug) VALUES
 CREATE TABLE books (
     id              INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
     category_id     INT UNSIGNED    DEFAULT NULL,
-    program_id      INT UNSIGNED    DEFAULT NULL,
     uploaded_by     INT UNSIGNED    NOT NULL,
     title           VARCHAR(300)    NOT NULL,
     slug            VARCHAR(350)    NOT NULL UNIQUE,
@@ -151,11 +150,23 @@ CREATE TABLE books (
 
     CONSTRAINT fk_books_category FOREIGN KEY (category_id) REFERENCES categories(id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_books_program FOREIGN KEY (program_id) REFERENCES programs(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_books_uploader FOREIGN KEY (uploaded_by) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
+-- -----------------------------------------------------
+-- Tabel pivot book_program (Many-to-Many)
+-- -----------------------------------------------------
+CREATE TABLE book_program (
+    book_id     INT UNSIGNED NOT NULL,
+    program_id  INT UNSIGNED NOT NULL,
+    PRIMARY KEY (book_id, program_id),
+    CONSTRAINT fk_bp_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bp_program FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_bp_book ON book_program(book_id);
+CREATE INDEX idx_bp_program ON book_program(program_id);
 
 CREATE INDEX idx_books_access ON books(access_type, status);
 CREATE INDEX idx_books_category ON books(category_id);

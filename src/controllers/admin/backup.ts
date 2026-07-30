@@ -295,13 +295,15 @@ export async function exportBackup(c: Context) {
 				cpSync(PDFS_DIR, pdfDest, { recursive: true });
 			}
 		} else {
-			// Query all books for Excel export
+			// Query all books for Excel export (with M2M programs)
 			const books = await query<BookRow[]>(
 				`SELECT b.title, b.author, b.description AS synopsis, b.publisher,
-				 b.publication_year AS year, b.isbn, p.name AS program_study,
+				 b.publication_year AS year, b.isbn,
+				 (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+				  FROM book_program bp JOIN programs p ON p.id = bp.program_id
+				  WHERE bp.book_id = b.id) AS program_study,
 				 b.access_type, b.file_path AS pdf_filename, b.cover_image
 				 FROM books b
-				 LEFT JOIN programs p ON p.id = b.program_id
 				 ORDER BY b.title`,
 			);
 

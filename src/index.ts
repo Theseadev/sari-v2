@@ -122,6 +122,11 @@ app.get("/api/openlibrary/isbn/:isbn", (c) => olCtrl.byIsbn(c));
 app.get("/api/openlibrary/cover", (c) => olCtrl.coverProxy(c));
 app.post("/api/translate", (c) => olCtrl.translate(c));
 
+// API: Get programs by faculty (for dynamic form)
+app.get("/api/programs/faculty/:facultyId", (c) =>
+	booksCrud.programsByFaculty(c),
+);
+
 // Backup (super_admin only)
 app.get("/admin/backup", (c) => backupCtrl.page(c));
 app.post("/admin/backup/export", (c) => backupCtrl.exportBackup(c));
