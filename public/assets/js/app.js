@@ -141,17 +141,17 @@ document.addEventListener("DOMContentLoaded", function () {
 		document.removeEventListener("keydown", onKeydown);
 	}
 
-	// Delegated click on book cards
+	// Delegated click on book cards & 3D shelf books
 	document.body.addEventListener("click", function (e) {
-		const card = e.target.closest(".book-card");
+		const card = e.target.closest(".book-card, .hero-shelf-book-item");
 		if (!card) return;
 
 		// Don't intercept form submissions or clicks inside forms
 		if (e.target.closest("form")) return;
 
 		e.preventDefault();
-		const slug = card.dataset.bookSlug;
-		console.log("[app.js] book card clicked:", slug);
+		const slug = card.dataset.bookSlug || card.dataset.slug;
+		console.log("[app.js] book card / shelf book clicked:", slug);
 		if (slug) openBookModal(slug, card);
 	});
 

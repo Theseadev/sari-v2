@@ -985,7 +985,7 @@ export async function catalog(c: Context) {
             : `<div class="cover-placeholder">${ICONS.book}</div>`;
             
         popularShelfBooksHtml += `
-            <div class="hero-shelf-book-item" data-slug="${esc(pb.slug)}" title="${esc(pb.title)} (${pb.views}x dibaca)">
+            <div class="hero-shelf-book-item" data-slug="${esc(pb.slug)}" data-book-slug="${esc(pb.slug)}" title="${esc(pb.title)} (${pb.views}x dibaca)">
                 <div class="hero-shelf-book-3d">
                     <div class="hero-shelf-book-spine"></div>
                     <div class="hero-shelf-book-cover">
