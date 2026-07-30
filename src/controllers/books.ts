@@ -1263,27 +1263,6 @@ export async function catalog(c: Context) {
             </div>
         </div>
 
-        <!-- STATS COUNTER -->
-        <div class="container stats-counter-section">
-            <div class="stats-counter-grid">
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">480+</div>
-                    <div class="stats-counter-label">Total Koleksi Buku</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">12</div>
-                    <div class="stats-counter-label">Program Studi</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">4</div>
-                    <div class="stats-counter-label">Fakultas Utama</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">100%</div>
-                    <div class="stats-counter-label">Akses Responsif Digital</div>
-                </div>
-            </div>
-        </div>
 
         <!-- BOOK CATALOG GRID -->
         <section class="container" style="padding-top:20px;padding-bottom:60px">
