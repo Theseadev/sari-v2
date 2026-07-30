@@ -1,7 +1,8 @@
 // src/controllers/books.ts - Katalog, detail, flip-book reader
 // Versi Komprehensif (UI/UX Lengkap, JSDoc, CSS/JS Inline Terintegrasi)
 
-import type { Context } from "hono";
+import { Context } from "hono";
+// Controller Buku & Catalog (Universitas Sari Mulia)
 import { query, queryOne } from "../config/database";
 import type { Book, Faculty, Program } from "../types";
 import { esc, getUser, getFlash } from "../helpers";
@@ -76,6 +77,19 @@ function getCatalogStyles(): string {
             margin-bottom: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
+        .hero-budi-left,
+        .hero-shelf-card,
+        .hero-shelf-viewport,
+        .hero-shelf-track {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            outline: none !important;
+        }
+        
         .hero-catalog h1 {
             font-size: 2.2rem;
             margin-bottom: 8px;
@@ -953,6 +967,36 @@ export async function catalog(c: Context) {
         programs = await query<Program[]>("SELECT id, name FROM programs ORDER BY name");
     }
 
+    // Kueri Buku Terpopuler untuk Ambalan Kayu 3D (Shelf)
+    const popularBooks = await query<Book[]>(`
+        SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.views, b.page_count,
+               pr.name AS program_name
+        FROM books b
+        LEFT JOIN programs pr ON pr.id = b.program_id
+        WHERE b.status = 'active'
+        ORDER BY b.views DESC
+        LIMIT 9
+    `);
+
+    let popularShelfBooksHtml = "";
+    for (const pb of popularBooks) {
+        const cover = pb.cover_image 
+            ? `<img src="/uploads/covers/${esc(pb.cover_image)}" alt="Cover ${esc(pb.title)}" loading="lazy">` 
+            : `<div class="cover-placeholder">${ICONS.book}</div>`;
+            
+        popularShelfBooksHtml += `
+            <div class="hero-shelf-book-item" data-slug="${esc(pb.slug)}" data-book-slug="${esc(pb.slug)}" title="${esc(pb.title)} (${pb.views}x dibaca)">
+                <div class="hero-shelf-book-3d">
+                    <div class="hero-shelf-book-spine"></div>
+                    <div class="hero-shelf-book-cover">
+                        ${cover}
+                    </div>
+                    <div class="hero-shelf-book-top"></div>
+                </div>
+            </div>
+        `;
+    }
+
     // Render HTML Cards (BUDI-inspired)
     let bookCards = "";
     if (books.length === 0) {
@@ -1058,30 +1102,18 @@ export async function catalog(c: Context) {
             <div class="hero-budi-container">
                 <div class="hero-budi-split">
                     
-                    <!-- COLUMN KIRI: CARD SLIDER BANNER -->
+                    <!-- COLUMN KIRI: AMBALAN BUKU TERPOPULER (3D SHELF) -->
                     <div class="hero-budi-left">
-                        <div class="hero-slider-card">
-                            <div class="hero-slider-track" id="heroSliderTrack">
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-1.svg" alt="Literasi Digital Kampus">
-                                </div>
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-2.svg" alt="4 Fakultas & 12 Prodi">
-                                </div>
-                                <div class="hero-slide">
-                                    <img src="/assets/images/hero-slide-3.svg" alt="Pembaca Interaktif">
-                                </div>
-                            </div>
-                            <!-- Slider Nav Controls -->
-                            <button type="button" class="hero-slider-btn prev" id="heroSliderPrev" aria-label="Slide Sebelumnya">&lsaquo;</button>
-                            <button type="button" class="hero-slider-btn next" id="heroSliderNext" aria-label="Slide Selanjutnya">&rsaquo;</button>
-                            <!-- Slider Dots -->
-                            <div class="hero-slider-dots" id="heroSliderDots">
-                                <span class="dot active" data-index="0"></span>
-                                <span class="dot" data-index="1"></span>
-                                <span class="dot" data-index="2"></span>
+                        <div class="hero-shelf-header">
+                            <span class="hero-shelf-badge">🔥 Buku Terpopuler</span>
+                        </div>
+                        <div class="hero-shelf-viewport" id="heroShelfViewport">
+                            <div class="hero-shelf-track" id="heroShelfTrack">
+                                ${popularShelfBooksHtml}
                             </div>
                         </div>
+                        <!-- Ambalan Kayu 3D Ledge -->
+                        <div class="hero-shelf-wood"></div>
                     </div>
 
                     <!-- COLUMN KANAN: TEXT & BADGES -->
@@ -1122,28 +1154,105 @@ export async function catalog(c: Context) {
 
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const track = document.getElementById('heroSliderTrack');
-                const prevBtn = document.getElementById('heroSliderPrev');
-                const nextBtn = document.getElementById('heroSliderNext');
-                const dots = document.querySelectorAll('#heroSliderDots .dot');
-                
-                if (track && dots.length) {
-                    let currentSlide = 0;
-                    const totalSlides = dots.length;
+                const viewport = document.getElementById('heroShelfViewport');
+                if (!viewport) return;
 
-                    function goToSlide(index) {
-                        currentSlide = (index + totalSlides) % totalSlides;
-                        track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
-                        dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
-                    }
+                let isDown = false;
+                let startX = 0;
+                let scrollLeft = 0;
+                let isDragging = false;
+                let autoScrollTimer = null;
 
-                    if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
-                    if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
-                    dots.forEach((dot, i) => dot.addEventListener('click', () => goToSlide(i)));
-
-                    // Auto slide every 4 seconds
-                    setInterval(() => goToSlide(currentSlide + 1), 4000);
+                // Auto Scroll Handler (Bergulir Otomatis)
+                function startAutoScroll() {
+                    stopAutoScroll();
+                    autoScrollTimer = setInterval(() => {
+                        if (isDown) return;
+                        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+                        if (viewport.scrollLeft >= maxScroll - 10) {
+                            viewport.scrollTo({ left: 0, behavior: 'smooth' });
+                        } else {
+                            viewport.scrollBy({ left: 150, behavior: 'smooth' });
+                        }
+                    }, 3500);
                 }
+
+                function stopAutoScroll() {
+                    if (autoScrollTimer) {
+                        clearInterval(autoScrollTimer);
+                        autoScrollTimer = null;
+                    }
+                }
+
+                // Mouse Drag (Desktop Cursor)
+                viewport.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    isDragging = false;
+                    stopAutoScroll();
+                    startX = e.pageX - viewport.offsetLeft;
+                    scrollLeft = viewport.scrollLeft;
+                    viewport.style.cursor = 'grabbing';
+                    viewport.style.scrollBehavior = 'auto';
+                });
+
+                viewport.addEventListener('mouseleave', () => {
+                    if (isDown) {
+                        isDown = false;
+                        viewport.style.cursor = 'grab';
+                        viewport.style.scrollBehavior = 'smooth';
+                        startAutoScroll();
+                    }
+                });
+
+                viewport.addEventListener('mouseup', () => {
+                    isDown = false;
+                    viewport.style.cursor = 'grab';
+                    viewport.style.scrollBehavior = 'smooth';
+                    startAutoScroll();
+                });
+
+                viewport.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - viewport.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    if (Math.abs(walk) > 5) isDragging = true;
+                    viewport.scrollLeft = scrollLeft - walk;
+                });
+
+                // Touch Swipe (HP / Tablet)
+                viewport.addEventListener('touchstart', (e) => {
+                    isDown = true;
+                    stopAutoScroll();
+                    startX = e.touches[0].pageX - viewport.offsetLeft;
+                    scrollLeft = viewport.scrollLeft;
+                    viewport.style.scrollBehavior = 'auto';
+                }, { passive: true });
+
+                viewport.addEventListener('touchend', () => {
+                    isDown = false;
+                    viewport.style.scrollBehavior = 'smooth';
+                    startAutoScroll();
+                });
+
+                viewport.addEventListener('touchmove', (e) => {
+                    if (!isDown) return;
+                    const x = e.touches[0].pageX - viewport.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    viewport.scrollLeft = scrollLeft - walk;
+                }, { passive: true });
+
+                // Prevent opening detail modal if user was dragging
+                viewport.addEventListener('click', (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        isDragging = false;
+                    }
+                }, true);
+
+                // Start auto scrolling on page load
+                startAutoScroll();
             });
         </script>
 
@@ -1154,27 +1263,6 @@ export async function catalog(c: Context) {
             </div>
         </div>
 
-        <!-- STATS COUNTER -->
-        <div class="container stats-counter-section">
-            <div class="stats-counter-grid">
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">480+</div>
-                    <div class="stats-counter-label">Total Koleksi Buku</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">12</div>
-                    <div class="stats-counter-label">Program Studi</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">4</div>
-                    <div class="stats-counter-label">Fakultas Utama</div>
-                </div>
-                <div class="stats-counter-card">
-                    <div class="stats-counter-num">100%</div>
-                    <div class="stats-counter-label">Akses Responsif Digital</div>
-                </div>
-            </div>
-        </div>
 
         <!-- BOOK CATALOG GRID -->
         <section class="container" style="padding-top:20px;padding-bottom:60px">
