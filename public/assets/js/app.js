@@ -513,6 +513,29 @@ document.addEventListener("DOMContentLoaded", function () {
 		});
 	});
 
+	// Filter pill dropdown toggle for mobile/touch devices
+	document.querySelectorAll(".filter-pill-wrap").forEach(function (wrap) {
+		const pill = wrap.querySelector(".filter-pill");
+		if (pill) {
+			pill.addEventListener("click", function (e) {
+				if (window.innerWidth <= 992 || e.target.closest(".pill-chevron")) {
+					e.preventDefault();
+					e.stopPropagation();
+					document.querySelectorAll(".filter-pill-wrap.open").forEach(function (other) {
+						if (other !== wrap) other.classList.remove("open");
+					});
+					wrap.classList.toggle("open");
+				}
+			});
+		}
+	});
+
+	document.addEventListener("click", function () {
+		document.querySelectorAll(".filter-pill-wrap.open").forEach(function (w) {
+			w.classList.remove("open");
+		});
+	});
+
 	// Inject CSRF token ke semua form yang tidak punya
 	const token = document.querySelector('meta[name="csrf-token"]')?.content;
 	if (token) {

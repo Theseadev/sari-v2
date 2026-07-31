@@ -925,17 +925,19 @@ export async function catalog(c: Context) {
     }
     
     if (programId > 0) {
-        where += " AND b.id IN (SELECT book_id FROM book_program WHERE program_id = ?)";
-        params.push(programId);
+        where += " AND (b.program_id = ? OR b.id IN (SELECT book_id FROM book_programs WHERE program_id = ?) OR b.id IN (SELECT book_id FROM book_program WHERE program_id = ?))";
+        params.push(programId, programId, programId);
     } else if (facultyId > 0) {
-        where += " AND b.id IN (SELECT bp.book_id FROM book_program bp JOIN programs pr ON pr.id = bp.program_id WHERE pr.faculty_id = ?)";
-        params.push(facultyId);
+        where += " AND (pr.faculty_id = ? OR b.id IN (SELECT bp.book_id FROM book_programs bp JOIN programs p ON p.id = bp.program_id WHERE p.faculty_id = ?) OR b.id IN (SELECT bp2.book_id FROM book_program bp2 JOIN programs p2 ON p2.id = bp2.program_id WHERE p2.faculty_id = ?))";
+        params.push(facultyId, facultyId, facultyId);
     }
 
     // Eksekusi Kueri Total
     const totalQuery = `
-        SELECT COUNT(*) AS cnt 
+        SELECT COUNT(DISTINCT b.id) AS cnt 
         FROM books b 
+        LEFT JOIN programs pr ON pr.id = b.program_id 
+        LEFT JOIN faculties f ON f.id = pr.faculty_id 
         WHERE ${where}
     `;
     const total = await queryOne<{ cnt: number }>(totalQuery, params);
@@ -943,16 +945,17 @@ export async function catalog(c: Context) {
 
     // Eksekusi Kueri Data
     const dataQuery = `
-        SELECT b.id, b.title, b.slug, b.author, b.access_type,
-               b.cover_image, b.page_count, b.views,
-               (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
-                FROM book_program bp JOIN programs p ON p.id = bp.program_id
-                WHERE bp.book_id = b.id) AS program_name,
-               (SELECT GROUP_CONCAT(DISTINCT f.name SEPARATOR ', ')
-                FROM book_program bp2 JOIN programs pr2 ON pr2.id = bp2.program_id
-                JOIN faculties f ON f.id = pr2.faculty_id
-                WHERE bp2.book_id = b.id) AS faculty_name
+        SELECT DISTINCT b.id, b.title, b.slug, b.author, b.access_type,
+               b.cover_image, b.page_count, b.views, b.created_at,
+               COALESCE(
+                   (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') FROM book_programs bp JOIN programs p ON p.id = bp.program_id WHERE bp.book_id = b.id),
+                   (SELECT GROUP_CONCAT(p2.name SEPARATOR ', ') FROM book_program bp2 JOIN programs p2 ON p2.id = bp2.program_id WHERE bp2.book_id = b.id),
+                   pr.name
+               ) AS program_name,
+               f.name AS faculty_name
         FROM books b
+        LEFT JOIN programs pr ON pr.id = b.program_id
+        LEFT JOIN faculties f ON f.id = pr.faculty_id
         WHERE ${where} 
         ORDER BY b.created_at DESC 
         LIMIT ${ITEMS_PER_PAGE} OFFSET ${(page - 1) * ITEMS_PER_PAGE}
@@ -960,21 +963,24 @@ export async function catalog(c: Context) {
     const books = await query<Book[]>(dataQuery, params);
 
     // Ambil Data Referensi untuk Filter
-    const faculties = await query<Faculty[]>("SELECT id, name FROM faculties ORDER BY name");
+    const faculties = await query<Faculty[]>("SELECT id, name FROM faculties ORDER BY id");
+    const allPrograms = await query<Program[]>("SELECT id, faculty_id, name FROM programs ORDER BY faculty_id, id");
     let programs: Program[] = [];
     
     if (facultyId > 0) {
-        programs = await query<Program[]>("SELECT id, name FROM programs WHERE faculty_id = ? ORDER BY name", [facultyId]);
+        programs = allPrograms.filter(p => p.faculty_id === facultyId);
     } else {
-        programs = await query<Program[]>("SELECT id, name FROM programs ORDER BY name");
+        programs = allPrograms;
     }
 
     // Kueri Buku Terpopuler untuk Ambalan Kayu 3D (Shelf)
     const popularBooks = await query<Book[]>(`
         SELECT b.id, b.title, b.slug, b.author, b.cover_image, b.views, b.page_count,
-               (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
-                FROM book_program bp JOIN programs p ON p.id = bp.program_id
-                WHERE bp.book_id = b.id) AS program_name
+               COALESCE(
+                   (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') FROM book_programs bp JOIN programs p ON p.id = bp.program_id WHERE bp.book_id = b.id),
+                   (SELECT GROUP_CONCAT(p2.name SEPARATOR ', ') FROM book_program bp2 JOIN programs p2 ON p2.id = bp2.program_id WHERE bp2.book_id = b.id),
+                   'Umum'
+               ) AS program_name
         FROM books b
         WHERE b.status = 'active'
         ORDER BY b.views DESC
@@ -1060,19 +1066,54 @@ export async function catalog(c: Context) {
         progItems += `<li data-val="${p.id}" class="${p.id === programId ? "selected" : ""}">${esc(p.name)}</li>`;
     }
 
-    // Filter Pills HTML
-    const pills = [
-        { label: "🌐 Semua Koleksi", facId: 0 },
-        { label: "🏥 Kesehatan", facId: 1 },
-        { label: "⚖️ Humaniora", facId: 2 },
-        { label: "💻 Sains & Teknologi", facId: 3 },
-        { label: "🐾 Kedokteran Hewan", facId: 4 },
-    ];
-    let filterPillsHtml = "";
-    for (const p of pills) {
-        const isActive = facultyId === p.facId ? "active" : "";
-        const href = p.facId === 0 ? "/buku" : `/buku?faculty=${p.facId}`;
-        filterPillsHtml += `<a href="${href}" class="filter-pill ${isActive}">${p.label}</a>`;
+    // Filter Pills HTML dengan Dropdown Prodi (Centered)
+    const facultyIcons: Record<number, string> = {
+        1: "🏥",
+        2: "⚖️",
+        3: "💻",
+        4: "🐾"
+    };
+
+    let filterPillsHtml = `
+        <a href="/buku" class="filter-pill ${facultyId === 0 && programId === 0 ? "active" : ""}">
+            🌐 Semua Koleksi
+        </a>
+    `;
+
+    for (const fac of faculties) {
+        const facProgs = allPrograms.filter(p => p.faculty_id === fac.id);
+        const icon = facultyIcons[fac.id] || "🏛️";
+        const isFacActive = facultyId === fac.id;
+        
+        let prodiItemsHtml = `
+            <a href="/buku?faculty=${fac.id}" class="filter-dropdown-item ${isFacActive && programId === 0 ? "active" : ""}">
+                <span class="item-dot"></span>
+                <span class="item-text">Semua ${esc(fac.name)}</span>
+            </a>
+        `;
+
+        for (const prog of facProgs) {
+            const isProgActive = programId === prog.id;
+            prodiItemsHtml += `
+                <a href="/buku?faculty=${fac.id}&program=${prog.id}" class="filter-dropdown-item ${isProgActive ? "active" : ""}">
+                    <span class="item-dot"></span>
+                    <span class="item-text">${esc(prog.name)}</span>
+                </a>
+            `;
+        }
+
+        filterPillsHtml += `
+            <div class="filter-pill-wrap ${isFacActive ? "active" : ""}">
+                <a href="/buku?faculty=${fac.id}" class="filter-pill ${isFacActive ? "active" : ""}">
+                    <span>${icon} ${esc(fac.name)}</span>
+                    <svg class="pill-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </a>
+                <div class="filter-pill-dropdown">
+                    <div class="dropdown-header-label">PRODI ${esc(fac.name).toUpperCase()}</div>
+                    ${prodiItemsHtml}
+                </div>
+            </div>
+        `;
     }
 
     // Siapkan Paginasi
@@ -1121,8 +1162,8 @@ export async function catalog(c: Context) {
 
                     <!-- COLUMN KANAN: TEXT & BADGES -->
                     <div class="hero-budi-right">
-                        <div class="hero-budi-tag">📖 PERPUSTAKAAN DIGITAL UNIVERSITAS SARI MULIA</div>
-                        <h1 class="hero-title-compact">Akses Ribuan Koleksi Buku, <span class="highlight">Jurnal & Referensi Ilmiah</span></h1>
+                        <div class="hero-budi-tag">📖 Sistem Akses dan Referensi Ilmiah</div>
+                        <h1 class="hero-title-compact">Akses Ribuan Koleksi E-Buku, Referensi Ilmiah, dan Lainnya.</h1>
                         <p class="hero-desc-compact">Platform literasi digital terintegrasi untuk civitas akademika Universitas Sari Mulia Banjarmasin. Temukan modul pembelajaran dan buku ajar berkualitas.</p>
                         
                         <!-- 3 FEATURE BADGES COMPACT -->
@@ -1142,10 +1183,10 @@ export async function catalog(c: Context) {
                                 </div>
                             </div>
                             <div class="hero-badge-card">
-                                <div class="hero-badge-icon">🎓</div>
+                                <div class="hero-badge-icon">🌐</div>
                                 <div class="hero-badge-info">
-                                    <h4>12 Prodi</h4>
-                                    <p>4 Fakultas Utama</p>
+                                    <h4>Akses 24/7</h4>
+                                    <p>Bebas Kapan Saja</p>
                                 </div>
                             </div>
                         </div>
