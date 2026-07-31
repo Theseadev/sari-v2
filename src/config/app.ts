@@ -1,4 +1,27 @@
 // src/config/app.ts - Konfigurasi aplikasi
+import fs from "node:fs";
+import path from "node:path";
+
+// Read .env file directly and force overwrite process.env
+try {
+	const envPath = path.join(process.cwd(), ".env");
+	if (fs.existsSync(envPath)) {
+		const content = fs.readFileSync(envPath, "utf-8");
+		for (const line of content.split("\n")) {
+			const trimmed = line.trim();
+			if (!trimmed || trimmed.startsWith("#")) continue;
+			const eqIdx = trimmed.indexOf("=");
+			if (eqIdx > 0) {
+				const key = trimmed.slice(0, eqIdx).trim();
+				let val = trimmed.slice(eqIdx + 1).trim();
+				if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+					val = val.slice(1, -1);
+				}
+				process.env[key] = val;
+			}
+		}
+	}
+} catch {}
 
 try {
 	process.loadEnvFile();
@@ -48,7 +71,7 @@ export const DB = {
 	port: Number(process.env.DB_PORT) || 3306,
 	database: process.env.DB_NAME || "sari_v2",
 	user: process.env.DB_USER || "root",
-	password: process.env.DB_PASS || "",
+	password: process.env.DB_PASS || "(19)Rasha*",
 	charset: "utf8mb4" as const,
 	// Ponytail: connectionLimit default 10 — cukup untuk development
 	waitForConnections: true,
